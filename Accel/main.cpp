@@ -5,6 +5,7 @@
 
 #include "uniform_grid.h"
 #include "mesh.h"
+#include "kdtree.h"
 
 using namespace std;
 
@@ -145,6 +146,8 @@ void keypress(int key, int action){
 int main(){
 
 	mesh* m = new mesh("meshes\\bunny.obj");
+	kdtree kd(m);
+	//test_uniform_grid();
 
 	bool run = GL_TRUE;
 

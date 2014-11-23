@@ -11,7 +11,6 @@ int* cudanumNeighbors;
 bool checkCUDAError(const char *msg) {
   cudaError_t err = cudaGetLastError();
   if( cudaSuccess != err) {
-    //fprintf(stderr, "Cuda error: %s: %s.\n", msg, cudaGetErrorString( err) ); 
 	cout<<"Cuda error at "<<msg<<": "<<cudaGetErrorString(err)<<endl;
 	cout<<endl;
 	return false;

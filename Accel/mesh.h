@@ -8,11 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include "utils.h"
-
-class boundingBox{
-public:
-	glm::vec3 min,max;
-};
+#include "boundingBox.h"
 
 class mesh{
 

@@ -2,10 +2,15 @@
 
 using namespace std;
 
+glm::vec3 *cudapositions;
+pair<int, int>* cudagrid;
+int* cudaneighbors;
+int* cudaids, *cudacellIds, *cudapIds;
+int* cudanumNeighbors;
+
 bool checkCUDAError(const char *msg) {
   cudaError_t err = cudaGetLastError();
   if( cudaSuccess != err) {
-    //fprintf(stderr, "Cuda error: %s: %s.\n", msg, cudaGetErrorString( err) ); 
 	cout<<"Cuda error at "<<msg<<": "<<cudaGetErrorString(err)<<endl;
 	cout<<endl;
 	return false;
@@ -71,14 +76,16 @@ void setGridValuesKernel(int numParticles, int numGridCells, pair<int,int>* grid
 }
 
 __global__ 
-void findNeighborsUsingGridKernel(int numParticles, float h, int maxNeighbors, glm::vec3* predictions, int* neighbors, int* numNeighbors, pair<int,int>* grid, int* pIds, int numGridCells, int* ids, glm::vec3 gridSize, int* cellIds){
+void findNeighborsUsingGridKernel(int numParticles, float h, int maxNeighbors, glm::vec3* positions, 
+								  int* neighbors, int* numNeighbors, pair<int,int>* grid, int* pIds, 
+								  int numGridCells, int* ids, glm::vec3 gridSize, int* cellIds){
 	int index = (blockIdx.x * blockDim.x) + threadIdx.x;
 
 	if (index<numParticles){
 		index = ids[index];
 		numNeighbors[index] = 0;
 
-		int cellIdOriginal = hashParticle(predictions[index], gridSize, h);
+		int cellIdOriginal = hashParticle(positions[index], gridSize, h);
 		if (cellIdOriginal<0 || cellIdOriginal>numGridCells-1) return;
 		//search for neighbors in 3x3x3 neighbor grid cells
 		//favors closer neighboring cells
@@ -171,15 +178,18 @@ void findNeighborsUsingGridKernel(int numParticles, float h, int maxNeighbors, g
 				cellId = cellId-gridSize.x*gridSize.y-gridSize.x-1;
 			}
 
+			//sanity check
 			if (cellId<0 || cellId>numGridCells-1) continue;
+
 			cellId1 = grid[cellId].first;
 			if (cellId1==-1) continue;
 			cellId2 = grid[cellId].second;
 			if (cellId2==-1) cellId2=cellId1;
+			
 			if (cellId1>numParticles-1 || cellId1<0 || cellId2>numParticles-1 || cellId2<0) continue;
 
 			int jid = ids[pIds[cellId1]];
-			if (lengthSquared(predictions[index]-predictions[jid])<h*h && numNeighbors[index]<maxNeighbors){
+			if (lengthSquared(positions[index]-positions[jid])<h*h && numNeighbors[index]<maxNeighbors){
 				int nid = index*maxNeighbors+numNeighbors[index];
 				neighbors[nid]=jid;
 				numNeighbors[index]+=1;
@@ -187,7 +197,7 @@ void findNeighborsUsingGridKernel(int numParticles, float h, int maxNeighbors, g
 
 			for (int i=cellId1; i<cellId2+1; i+=1){
 				int jid = ids[pIds[i]];
-				if (lengthSquared(predictions[index]-predictions[jid])<h*h && numNeighbors[index]<maxNeighbors){
+				if (lengthSquared(positions[index]-positions[jid])<h*h && numNeighbors[index]<maxNeighbors){
 					int nid = index*maxNeighbors+numNeighbors[index];
 					neighbors[nid]=jid;
 					numNeighbors[index]+=1;
@@ -201,6 +211,82 @@ __global__
 void hello(int *a, int *b)
 {
 	a[threadIdx.x] += b[threadIdx.x];
+}
+
+void initCuda(int numParticles, int* ids, glm::vec3* positions, int maxNeighbors, glm::vec3 gridSize){
+	cudapositions = NULL;
+	cudaMalloc((void**)&cudapositions, numParticles*sizeof(glm::vec3));
+	cudaMemcpy( cudapositions, positions, numParticles*sizeof(glm::vec3), cudaMemcpyHostToDevice);
+
+	cudaneighbors = NULL;
+	cudaMalloc((void**)&cudaneighbors, numParticles*maxNeighbors*sizeof(int*));
+
+	cudanumNeighbors = NULL;
+	cudaMalloc((void**)&cudanumNeighbors, numParticles*sizeof(int));
+	cudaMemcpy( cudanumNeighbors, ids, numParticles*sizeof(int), cudaMemcpyHostToDevice);
+	
+	cudaids = NULL;
+	cudaMalloc((void**)&cudaids, numParticles*sizeof(int));
+	cudaMemcpy( cudaids, ids, numParticles*sizeof(int), cudaMemcpyHostToDevice);
+
+	cudacellIds = NULL;
+	cudaMalloc((void**)&cudacellIds, numParticles*sizeof(int));
+
+	cudapIds = NULL;
+	cudaMalloc((void**)&cudapIds, numParticles*sizeof(int));
+
+	cudagrid = NULL;
+	cudaMalloc((void**)&cudagrid, int(gridSize.x*gridSize.y*gridSize.z)*sizeof(pair<int,int>));
+}
+
+void findNeighbors(int numParticles, int maxNeighbors, glm::vec3 gridSize, float h){
+	dim3 threadsPerBlock(64);
+	dim3 fullBlocksPerGrid(numParticles/8+1);
+
+	dim3 threadsPerBlockGrid(64);
+	dim3 fullBlocksPerGridGrid(int(gridSize.x*gridSize.y*gridSize.z)/8+1);
+
+	hashParticlesToGridKernel<<<fullBlocksPerGrid, threadsPerBlock>>>(numParticles, cudacellIds, cudapIds, cudapositions, gridSize, cudaids, h);
+	cudaThreadSynchronize();
+	checkCUDAError("hasing particles");
+
+	thrust::device_ptr<int> thrustCellIds = thrust::device_pointer_cast(cudacellIds);
+	thrust::device_ptr<int> thrustPIds = thrust::device_pointer_cast(cudapIds);
+	thrust::sort_by_key(thrustCellIds, thrustCellIds+numParticles, thrustPIds);
+
+	resetGrid<<<fullBlocksPerGridGrid, threadsPerBlockGrid>>>(int(gridSize.x*gridSize.y*gridSize.z), cudagrid);
+	checkCUDAError("reset grid");
+	setGridValuesKernel<<<fullBlocksPerGrid, threadsPerBlock>>>(numParticles, int(gridSize.x*gridSize.y*gridSize.z), cudagrid, cudacellIds);
+	checkCUDAError("set values in grid neighbor");
+	
+	cout<<"ERGWERTH"<<endl;
+
+	findNeighborsUsingGridKernel<<<fullBlocksPerGrid, threadsPerBlock>>>(numParticles, h, maxNeighbors, cudapositions, cudaneighbors, cudanumNeighbors, cudagrid, cudapIds, int(gridSize.x*gridSize.y*gridSize.z), cudaids, gridSize, cudacellIds);
+
+	int* numNeighbors = new int[numParticles];
+	cudaMemcpy( numNeighbors, cudanumNeighbors, numParticles*sizeof(int), cudaMemcpyDeviceToHost);
+	checkCUDAError(" copying num neighbor dbhtrwhnwe ");
+
+	int avg = 0;
+	for (int i=0; i<numParticles; i++){
+		avg+=numNeighbors[i];
+	}
+
+	cout<<"average number of neighbors: "<<float(avg)/float(numParticles)<<endl;
+
+	delete [] numNeighbors;
+
+	checkCUDAError(" finding neighbors using grid ");
+}
+
+void freeCudaGrid(){
+	cudaFree(cudapositions);
+	cudaFree(cudacellIds);
+	cudaFree(cudapIds);
+	cudaFree(cudagrid);
+	cudaFree(cudanumNeighbors);
+	cudaFree(cudaneighbors);
+	cudaFree(cudaids);
 }
 
 void test_uniform_grid(){
@@ -239,4 +325,125 @@ void test_uniform_grid(){
 	delete [] a;
 	delete [] b;
 
+
+}
+
+
+hash_grid::hash_grid(int numParticles, glm::vec3* points, glm::vec3 gridSize){
+
+	m_numParticles = numParticles;
+	m_points = new glm::vec3[m_numParticles];
+	m_ids = new int[m_numParticles];
+	for (int i=0; i<m_numParticles; i+=1){
+		m_points[i] = points[i];
+		m_ids[i] = i;
+	}
+
+	m_gridSize = gridSize;
+
+	c_positions = NULL;
+	cudaMalloc((void**)&c_positions, m_numParticles*sizeof(glm::vec3));
+	cudaMemcpy( c_positions, m_points, m_numParticles*sizeof(glm::vec3), cudaMemcpyHostToDevice);
+	
+	c_ids = NULL;
+	cudaMalloc((void**)&c_ids, m_numParticles*sizeof(int));
+	cudaMemcpy( c_ids, m_ids, m_numParticles*sizeof(int), cudaMemcpyHostToDevice);
+
+	c_cellIds = NULL;
+	cudaMalloc((void**)&c_cellIds, m_numParticles*sizeof(int));
+
+	c_pIds = NULL;
+	cudaMalloc((void**)&c_pIds, m_numParticles*sizeof(int));
+
+	c_grid = NULL;
+	cudaMalloc((void**)&c_grid, int(m_gridSize.x*m_gridSize.y*m_gridSize.z)*sizeof(pair<int,int>));
+
+	neighborsAlloc = false;
+	m_maxNeighbors = -1;
+}
+
+void hash_grid::findNeighbors(int maxNeighbors, float h){
+	if (maxNeighbors < 0){
+		return;
+	}
+
+	if (m_maxNeighbors != maxNeighbors && m_maxNeighbors != -1){
+		cudaFree(c_numNeighbors);
+		cudaFree(c_neighbors);
+	}
+
+	m_maxNeighbors = maxNeighbors;
+
+	c_neighbors = NULL;
+	cudaMalloc((void**)&c_neighbors, m_numParticles*m_maxNeighbors*sizeof(int*));
+
+	c_numNeighbors = NULL;
+	cudaMalloc((void**)&c_numNeighbors, m_numParticles*sizeof(int));
+	cudaMemcpy( c_numNeighbors, m_ids, m_numParticles*sizeof(int), cudaMemcpyHostToDevice);
+
+	neighborsAlloc = true;
+
+	dim3 threadsPerBlock(64);
+	dim3 fullBlocksPerGrid(m_numParticles/8+1);
+
+	dim3 threadsPerBlockGrid(64);
+	dim3 fullBlocksPerGridGrid(int(m_gridSize.x*m_gridSize.y*m_gridSize.z)/8+1);
+
+
+	hashParticlesToGridKernel<<<fullBlocksPerGrid, threadsPerBlock>>>
+		(m_numParticles, c_cellIds, c_pIds, c_positions, m_gridSize, c_ids, h);
+	cudaThreadSynchronize();
+	
+	checkCUDAError("hashing particles");
+
+	thrust::device_ptr<int> thrustCellIds = thrust::device_pointer_cast(c_cellIds);
+	thrust::device_ptr<int> thrustPIds = thrust::device_pointer_cast(c_pIds);
+	thrust::sort_by_key(thrustCellIds, thrustCellIds+m_numParticles, thrustPIds);
+
+	resetGrid<<<fullBlocksPerGridGrid, threadsPerBlockGrid>>>
+		(int(m_gridSize.x*m_gridSize.y*m_gridSize.z), c_grid);
+	
+	checkCUDAError("reset grid");
+	
+	setGridValuesKernel<<<fullBlocksPerGrid, threadsPerBlock>>>
+		(m_numParticles, int(m_gridSize.x*m_gridSize.y*m_gridSize.z), c_grid, c_cellIds);
+	
+	checkCUDAError("set values in grid neighbor");
+	
+	cout<<"ERGWERTH"<<endl;
+
+	findNeighborsUsingGridKernel<<<fullBlocksPerGrid, threadsPerBlock>>>
+		(m_numParticles, h, m_maxNeighbors, c_positions, c_neighbors, c_numNeighbors, c_grid, 
+		c_pIds, int(m_gridSize.x*m_gridSize.y*m_gridSize.z), c_ids, m_gridSize, c_cellIds);
+
+	int* numNeighbors = new int[m_numParticles];
+	cudaMemcpy( numNeighbors, c_numNeighbors, m_numParticles*sizeof(int), cudaMemcpyDeviceToHost);
+	checkCUDAError(" copying num neighbor dbhtrwhnwe ");
+
+	int avg = 0;
+	for (int i=0; i<m_numParticles; i++){
+		avg+=numNeighbors[i];
+	}
+
+	cout<<"average number of neighbors: "<<float(avg)/float(m_numParticles)<<endl;
+
+	delete [] numNeighbors;
+
+	checkCUDAError(" finding neighbors using grid ");
+}
+
+hash_grid::~hash_grid(){
+
+	delete [] m_points;
+
+	if (neighborsAlloc){
+		cudaFree(c_numNeighbors);
+		cudaFree(c_neighbors);
+	}
+
+	cudaFree(c_positions);
+	cudaFree(c_cellIds);
+	cudaFree(c_pIds);
+	cudaFree(c_grid);
+	cudaFree(c_ids);
 }

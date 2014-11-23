@@ -9,8 +9,8 @@
 
 using namespace std;
 
-int windowWidth  = 500;
-int windowHeight = 500;
+int windowWidth  = 750;
+int windowHeight = 750;
 
 glm::vec3 upperBound = glm::vec3(1,1,1);
 glm::vec3 lowerBound = glm::vec3(0,0,0);
@@ -106,6 +106,20 @@ void drawMesh(mesh* m){
 	}
 }
 
+void drawMeshAsPoints(mesh* m){
+	int numPoints = m->numVerts;
+	for (int i=0; i<numPoints; i+=1){
+
+		glm::vec3 p1 = m->verts[i];
+
+		glColor3f(1,0,0);
+		glBegin(GL_POINTS); //top
+		glVertex3f(p1.x,p1.y,p1.z);
+		glEnd();
+
+	}
+}
+
 void drawBoundingBox(boundingBox bb){
 	glm::vec3 min = bb.min;
 	glm::vec3 max = bb.max;
@@ -146,9 +160,23 @@ void keypress(int key, int action){
 int main(){
 
 	mesh* m = new mesh("meshes\\bunny.obj");
-	kdtree kd(m);
-	kd.construct();
-	//test_uniform_grid();
+
+	glm::vec3 gridSize = m->bb.max - m->bb.min;
+	
+	/*int* ids = new int[m->numVerts];
+	for (int i=0; i<m->numVerts; i+=1){
+		ids[i] = i;
+	}
+	initCuda(m->numVerts, ids, m->verts, 25, gridSize);
+	findNeighbors(m->numVerts, 25, gridSize, 1.5);
+	freeCudaGrid();
+	delete [] ids;*/
+
+	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
+	grid.findNeighbors(25, 1.5);
+
+	//kdtree kd(m);
+	//kd.construct();
 
 	bool run = GL_TRUE;
 
@@ -190,11 +218,12 @@ int main(){
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//drawGrid();
-		drawMesh(m);
+		drawMeshAsPoints(m);
+		//drawMesh(m);
 		drawBoundingBox(m->bb);
-		for (int i=0; i<kd.m_mesh->numTris; i+=1){
-			drawBoundingBox(kd.boundingBoxes[i]);
-		}
+		//for (int i=0; i<kd.m_mesh->numTris; i+=1){
+		//	drawBoundingBox(kd.boundingBoxes[i]);
+		//}
 
 		GLenum errCode;
 		const GLubyte* errString;

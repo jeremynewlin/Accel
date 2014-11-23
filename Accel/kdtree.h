@@ -3,6 +3,7 @@
 
 #include "boundingBox.h"
 #include "mesh.h"
+#include <iostream>
 
 class node{
 
@@ -32,5 +33,7 @@ public:
 	boundingBox* cudaBoundingBoxes;
 
 };
+
+void testArray();
 
 #endif

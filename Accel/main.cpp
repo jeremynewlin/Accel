@@ -147,6 +147,7 @@ int main(){
 
 	mesh* m = new mesh("meshes\\bunny.obj");
 	kdtree kd(m);
+	kd.construct();
 	//test_uniform_grid();
 
 	bool run = GL_TRUE;
@@ -191,6 +192,9 @@ int main(){
 		//drawGrid();
 		drawMesh(m);
 		drawBoundingBox(m->bb);
+		for (int i=0; i<kd.m_mesh->numTris; i+=1){
+			drawBoundingBox(kd.boundingBoxes[i]);
+		}
 
 		GLenum errCode;
 		const GLubyte* errString;

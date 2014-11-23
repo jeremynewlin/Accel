@@ -24,6 +24,7 @@ private:
 	glm::vec3* cudaTris;
 	glm::vec3* cudaVerts;
 
+	void perTriBoundingBox();
 
 //for debugging only
 public:

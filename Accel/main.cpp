@@ -105,6 +105,40 @@ void drawMesh(mesh* m){
 	}
 }
 
+void drawBoundingBox(boundingBox bb){
+	glm::vec3 min = bb.min;
+	glm::vec3 max = bb.max;
+
+	glColor3f(1,1,1);
+	glBegin(GL_LINE_LOOP); //top
+	glVertex3f(min.x,max.y,min.z);
+	glVertex3f(max.x,max.y,min.z);
+	glVertex3f(max.x,max.y,max.z);
+	glVertex3f(min.x,max.y,max.z);
+	glEnd();
+
+	glBegin(GL_LINE_LOOP); //bottom
+	glVertex3f(min.x,min.y,min.z);
+	glVertex3f(max.x,min.y,min.z);
+	glVertex3f(max.x,min.y,max.z);
+	glVertex3f(min.x,min.y,max.z);
+	glEnd();
+
+	glBegin(GL_LINE_LOOP); //right
+	glVertex3f(max.x,min.y,min.z);
+	glVertex3f(max.x,max.y,min.z);
+	glVertex3f(max.x,max.y,max.z);
+	glVertex3f(max.x,min.y,max.z);
+	glEnd();
+
+	glBegin(GL_LINE_LOOP); //left
+	glVertex3f(min.x,min.y,min.z);
+	glVertex3f(min.x,max.y,min.z);
+	glVertex3f(min.x,max.y,max.z);
+	glVertex3f(min.x,min.y,max.z);
+	glEnd();
+}
+
 void keypress(int key, int action){
 }
 
@@ -153,6 +187,7 @@ int main(){
 
 		//drawGrid();
 		drawMesh(m);
+		drawBoundingBox(m->bb);
 
 		GLenum errCode;
 		const GLubyte* errString;

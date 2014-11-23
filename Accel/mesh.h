@@ -9,6 +9,11 @@
 #include <sstream>
 #include "utils.h"
 
+class boundingBox{
+public:
+	glm::vec3 min,max;
+};
+
 class mesh{
 
 public:
@@ -17,6 +22,7 @@ public:
 	int numTris, numVerts;
 	glm::vec3* tris;
 	glm::vec3* verts;
+	boundingBox bb;
 };
 
 #endif

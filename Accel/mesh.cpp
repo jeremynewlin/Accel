@@ -62,4 +62,7 @@ mesh::mesh(string fileName){
 	this->verts = vertData;
 	this->numTris = faces.size();
 	this->numVerts = verts.size();
+
+	bb.min = min;
+	bb.max = max;
 }

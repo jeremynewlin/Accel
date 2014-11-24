@@ -21,11 +21,18 @@ public:
 	glm::vec3 m_gridSize;
 	int* m_ids;
 	int m_maxNeighbors;
+	int* m_gridNumNeighbors;
+	int* m_bruteNumNeighbors;
+	int* m_gridNeighbors;
+	int* m_bruteNeighbors;
+	float m_h;
 
 public:
 	hash_grid(int numParticles, glm::vec3* points, glm::vec3 gridSize);
 
 	void findNeighbors(int maxNeighbors, float h);
+
+	int hashParticle(int id) const;
 
 	~hash_grid();
 

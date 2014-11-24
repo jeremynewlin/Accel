@@ -1,11 +1,8 @@
-//#include "glew.h"
 #include "../glew/include/GL/glew.h"
-//#include <GL/glew.h>
-//#include "glfw.h"
 #include "../glfw/include/GL/glfw.h"
-//#include <GL/glfw3.h>
 
 #include <iostream>
+#include <time.h>
 
 #include "uniform_grid.h"
 #include "mesh.h"
@@ -19,13 +16,19 @@ int windowHeight = 750;
 glm::vec3 upperBound = glm::vec3(1,1,1);
 glm::vec3 lowerBound = glm::vec3(0,0,0);
 
-glm::vec3 cameraPos(0,5,10);
-glm::vec3 cameraTar(0,0,0);
+glm::vec3 cameraPos(0.5,0.5,2);
+glm::vec3 cameraTar(0.5,0.5,0);
 glm::vec3 cameraUp(0,1,0);
 
 glm::vec3 lightPos(0,10,0);
 
-bool paused = false;
+bool paused   = false;
+bool drawGridToggle = false, drawHashToggle = false;
+
+int currentID = 0;
+int numIDs = 1;
+
+std::vector<glm::vec3> colors;
 
 void aimCamera(){
 	gluPerspective(45, static_cast<float>(windowWidth) / static_cast<float>(windowHeight), 0.1, 10000.0);
@@ -35,11 +38,8 @@ void aimCamera(){
 			   cameraUp.x,  cameraUp.y,  cameraUp.z);
 }
 
-void drawGrid(){
-	float h = 0.50f;
-	glColor3f(0,.7,.7);
+void drawGrid(glm::vec3 gridSize, float h, glm::vec3 offset){
 	int gx, gy,gz;
-	glm::vec3 gridSize = glm::vec3(1,1,1)/h;
 	gx = int(gridSize.x);
 	gy = int(gridSize.y);
 	gz = int(gridSize.z);
@@ -48,9 +48,9 @@ void drawGrid(){
 	for (int i=0; i<gx; i++){
 		for (int j=0; j<gy; j++){
 			for (int k=0; k<gz; k++){
-				glm::vec3 min = glm::vec3(i*cellSize,j*cellSize,k*cellSize);
+				glm::vec3 min = glm::vec3(i*cellSize,j*cellSize,k*cellSize) + offset;
 				glm::vec3 max = min+glm::vec3(cellSize,cellSize,cellSize);
-				glColor3f(1,1,1);
+				glColor4f(1,1,1, 0.25f);
 				glBegin(GL_LINE_LOOP); //top
 				glVertex3f(min.x,max.y,min.z);
 				glVertex3f(max.x,max.y,min.z);
@@ -116,7 +116,47 @@ void drawMeshAsPoints(mesh* m){
 
 		glm::vec3 p1 = m->verts[i];
 
-		glColor3f(1,0,0);
+		glColor4f(1,1,1, 0.25f);
+		glBegin(GL_POINTS); //top
+		glVertex3f(p1.x,p1.y,p1.z);
+		glEnd();
+
+	}
+}
+
+void drawNeighbors(int particleID, const hash_grid& grid, bool useGrid = true){
+	int numPoints = grid.m_gridNumNeighbors[particleID];
+	if (!useGrid) numPoints = grid.m_bruteNumNeighbors[particleID];
+
+	for (int i=0; i<numPoints; i+=1){
+
+		glm::vec3 p1 = grid.m_points[grid.m_gridNeighbors[particleID*grid.m_maxNeighbors + i]];
+		if (!useGrid) p1 = grid.m_points[grid.m_bruteNeighbors[particleID*grid.m_maxNeighbors + i]];
+
+		glColor4f(1,0,0, 0.5f);
+		if (!useGrid) glColor4f(0,0,1, 0.5f);
+
+		glBegin(GL_POINTS); //top
+		glVertex3f(p1.x,p1.y,p1.z);
+		glEnd();
+	}
+
+	glm::vec3 p1 = grid.m_points[particleID];
+	glColor3f(0,1,0);
+	glBegin(GL_POINTS); //top
+	glVertex3f(p1.x,p1.y,p1.z);
+	glEnd();
+}
+
+void drawHashes(const hash_grid& grid){
+	int numPoints = grid.m_numParticles;
+	for (int i=0; i<numPoints; i+=1){
+
+		glm::vec3 p1 = grid.m_points[i];
+		int hash = grid.hashParticle(i);
+		glm::vec3 c1 = colors[hash];
+
+		glColor4f(c1.x,c1.y,c1.z, 0.25f);
 		glBegin(GL_POINTS); //top
 		glVertex3f(p1.x,p1.y,p1.z);
 		glEnd();
@@ -158,7 +198,61 @@ void drawBoundingBox(boundingBox bb){
 	glEnd();
 }
 
-void keypress(int key, int action){
+void keypress(int key, int action)
+{
+	if(glfwGetKey(key) == GLFW_PRESS)
+	{
+		switch(key)
+		{
+			case GLFW_KEY_SPACE:
+				break;
+			case GLFW_KEY_ESC:
+				break;
+			case 'a':
+			case 'A':
+				currentID = (currentID-1);//%numIDs;
+				if (currentID < 0) currentID = numIDs-1;
+				currentID = currentID % numIDs;
+				break;
+			case 'h':
+			case 'H':
+				drawHashToggle = !drawHashToggle;
+				break;
+			case 'v':
+			case 'V':
+				break;
+			case 'q':
+			case 'Q':
+				break;
+			case 'w':
+			case 'W':
+				break;
+			case 'p':
+			case 'P':
+				paused = !paused;
+				break;
+			case 'r':
+			case 'R':
+				break;
+			case 'g':
+			case 'G':
+				drawGridToggle=!drawGridToggle;
+				break;
+			case 'd':
+			case 'D':
+				break;
+			case 'b':
+			case 'B':
+				break;
+			case 's':
+			case 'S':
+				currentID = (currentID+1)%numIDs;
+				break;
+			case 'z':
+			case 'Z':
+				break;
+		}
+	}
 }
 
 void getBB(KDTreeNode* current, vector<boundingBox>& bbs){
@@ -167,15 +261,31 @@ void getBB(KDTreeNode* current, vector<boundingBox>& bbs){
 
 int main(){
 
-	mesh* m = new mesh("meshes\\bunny.obj");
+	srand(time(NULL));
+
+	for (int i=0; i<10000; i+=1){
+		float x = float(rand())/float(RAND_MAX);
+		float y = float(rand())/float(RAND_MAX);
+		float z = float(rand())/float(RAND_MAX);
+		colors.push_back(glm::vec3(x,y,z));
+	}
+
+	mesh* m = new mesh("meshes\\bunny_small_flat.obj");
 
 	glm::vec3 gridSize = m->bb.max - m->bb.min;
+	gridSize = glm::vec3(1,1,1);
+	float h = 0.05f;
 
-	//hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
-	//grid.findNeighbors(25, 1.5);
+	gridSize /= h;
 
-	KDTreeCPU* kd = new KDTreeCPU(m);
+	gridSize.x = floor(gridSize.x)+1.0f;
+	gridSize.y = floor(gridSize.y)+1.0f;
+	gridSize.z = floor(gridSize.z)+1.0f;
 
+	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
+	grid.findNeighbors(50, h);
+
+	numIDs = grid.m_numParticles;
 
 	bool run = GL_TRUE;
 
@@ -216,15 +326,16 @@ int main(){
 		frame+=1;
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		//drawGrid();
-		//drawMeshAsPoints(m);
-		drawMesh(m);
-		drawBoundingBox(m->bb);
-		for (int i=0; i<kd->getNumNodes(); i+=1){
-			drawBoundingBox(kd->getBoundingBox(i));
-		}
-		//for (int i=0; i<kd.m_mesh->numTris; i+=1){
-		//	drawBoundingBox(kd.boundingBoxes[i]);
+		if (drawGridToggle) drawGrid(grid.m_gridSize, h, glm::vec3()/*-(m->bb.max-m->bb.min)/2.0f*/);
+		drawMeshAsPoints(m);
+		if (drawHashToggle) drawHashes(grid);
+		drawNeighbors(currentID, grid, false);
+		drawNeighbors(currentID, grid, true);
+		
+		//drawBoundingBox(m->bb);
+		//drawMesh(m);
+		//for (int i=0; i<kd->getNumNodes(); i+=1){
+		//	drawBoundingBox(kd->getBoundingBox(i));
 		//}
 
 		GLenum errCode;
@@ -250,7 +361,6 @@ int main(){
 	}
 
 	delete m;
-	delete kd;
 
 	glfwTerminate();
     exit(EXIT_SUCCESS);

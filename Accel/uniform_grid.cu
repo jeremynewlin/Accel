@@ -208,6 +208,29 @@ void findNeighborsUsingGridKernel(int numParticles, float h, int maxNeighbors, g
 }
 
 __global__
+void findNeighborsKernel(int numParticles, glm::vec3* positions, int* neighbors, int* numNeighbors, float h, int maxNeighbors, int* ids){
+	int index = (blockIdx.x * blockDim.x) + threadIdx.x;
+	if (index<numParticles){
+		index = ids[index];
+		numNeighbors[index] = 0;
+		for (int j=0; j<numParticles; j++){
+			if (lengthSquared(positions[index]-positions[j])<h*h && numNeighbors[index]<maxNeighbors){
+				neighbors[index*maxNeighbors+numNeighbors[index]]=ids[j];
+				numNeighbors[index]+=1;
+			}
+		}
+	}
+}
+
+__global__
+void resetNumNeighbors(int numParticles, int* numNeighbors){
+	int index = (blockIdx.x * blockDim.x) + threadIdx.x;
+	if (index<numParticles){
+		numNeighbors[index] = 0;
+	}
+}
+
+__global__
 void hello(int *a, int *b)
 {
 	a[threadIdx.x] += b[threadIdx.x];
@@ -272,7 +295,7 @@ void findNeighbors(int numParticles, int maxNeighbors, glm::vec3 gridSize, float
 		avg+=numNeighbors[i];
 	}
 
-	cout<<"average number of neighbors: "<<float(avg)/float(numParticles)<<endl;
+	cout<<"average number of neighbors with grid: "<<float(avg)/float(numParticles)<<endl;
 
 	delete [] numNeighbors;
 
@@ -370,16 +393,25 @@ void hash_grid::findNeighbors(int maxNeighbors, float h){
 	if (m_maxNeighbors != maxNeighbors && m_maxNeighbors != -1){
 		cudaFree(c_numNeighbors);
 		cudaFree(c_neighbors);
+		delete [] m_gridNeighbors;
+		delete [] m_bruteNeighbors;
+		delete [] m_gridNumNeighbors;
+		delete [] m_bruteNumNeighbors;
 	}
 
 	m_maxNeighbors = maxNeighbors;
+	m_h = h;
 
 	c_neighbors = NULL;
 	cudaMalloc((void**)&c_neighbors, m_numParticles*m_maxNeighbors*sizeof(int*));
 
 	c_numNeighbors = NULL;
 	cudaMalloc((void**)&c_numNeighbors, m_numParticles*sizeof(int));
-	cudaMemcpy( c_numNeighbors, m_ids, m_numParticles*sizeof(int), cudaMemcpyHostToDevice);
+
+	m_gridNeighbors = new int[m_numParticles*m_maxNeighbors];
+	m_bruteNeighbors = new int[m_numParticles*m_maxNeighbors];
+	m_gridNumNeighbors = new int[m_numParticles];
+	m_bruteNumNeighbors = new int[m_numParticles];
 
 	neighborsAlloc = true;
 
@@ -410,26 +442,54 @@ void hash_grid::findNeighbors(int maxNeighbors, float h){
 	
 	checkCUDAError("set values in grid neighbor");
 	
-	cout<<"ERGWERTH"<<endl;
-
+	/////////////////////////
+	resetNumNeighbors<<<fullBlocksPerGrid, threadsPerBlock>>>
+		(m_numParticles, c_numNeighbors);
 	findNeighborsUsingGridKernel<<<fullBlocksPerGrid, threadsPerBlock>>>
 		(m_numParticles, h, m_maxNeighbors, c_positions, c_neighbors, c_numNeighbors, c_grid, 
 		c_pIds, int(m_gridSize.x*m_gridSize.y*m_gridSize.z), c_ids, m_gridSize, c_cellIds);
 
-	int* numNeighbors = new int[m_numParticles];
-	cudaMemcpy( numNeighbors, c_numNeighbors, m_numParticles*sizeof(int), cudaMemcpyDeviceToHost);
+	cudaMemcpy( m_gridNumNeighbors, c_numNeighbors, m_numParticles*sizeof(int), cudaMemcpyDeviceToHost);
 	checkCUDAError(" copying num neighbor dbhtrwhnwe ");
+
+	cudaMemcpy( m_gridNeighbors, c_neighbors, m_numParticles*m_maxNeighbors*sizeof(int), cudaMemcpyDeviceToHost);
+	checkCUDAError(" copying neighbor dbhtrwhnwe ");
 
 	int avg = 0;
 	for (int i=0; i<m_numParticles; i++){
-		avg+=numNeighbors[i];
+		avg+=m_gridNumNeighbors[i];
 	}
 
-	cout<<"average number of neighbors: "<<float(avg)/float(m_numParticles)<<endl;
+	cout<<"average number of neighbors with grid: "<<float(avg)/float(m_numParticles)<<endl;
 
-	delete [] numNeighbors;
+	//////////////////
+	resetNumNeighbors<<<fullBlocksPerGrid, threadsPerBlock>>>
+		(m_numParticles, c_numNeighbors);
+	findNeighborsKernel<<<fullBlocksPerGrid, threadsPerBlock>>>
+		(m_numParticles, c_positions, c_neighbors, c_numNeighbors, h, m_maxNeighbors, c_ids);
+
+	cudaMemcpy( m_bruteNumNeighbors, c_numNeighbors, m_numParticles*sizeof(int), cudaMemcpyDeviceToHost);
+	checkCUDAError(" copying num neighbor dbhtrwhnwe ");
+
+	cudaMemcpy( m_bruteNeighbors, c_neighbors, m_numParticles*m_maxNeighbors*sizeof(int), cudaMemcpyDeviceToHost);
+	checkCUDAError(" copying neighbor dbhtrwhnwe ");
+
+	avg = 0;
+	for (int i=0; i<m_numParticles; i++){
+		avg+=m_bruteNumNeighbors[i];
+	}
+
+	cout<<"average number of neighbors with brute: "<<float(avg)/float(m_numParticles)<<endl;
 
 	checkCUDAError(" finding neighbors using grid ");
+}
+
+int hash_grid::hashParticle(int id) const{
+	glm::vec3 p = m_points[id];
+	int x = p.x/m_h;
+	int y = p.y/m_h;
+	int z = p.z/m_h;
+	return x + y*m_gridSize.x + z*m_gridSize.x*m_gridSize.y;
 }
 
 hash_grid::~hash_grid(){
@@ -439,6 +499,10 @@ hash_grid::~hash_grid(){
 	if (neighborsAlloc){
 		cudaFree(c_numNeighbors);
 		cudaFree(c_neighbors);
+		delete [] m_gridNeighbors;
+		delete [] m_bruteNeighbors;
+		delete [] m_gridNumNeighbors;
+		delete [] m_bruteNumNeighbors;
 	}
 
 	cudaFree(c_positions);

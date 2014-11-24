@@ -1,15 +1,15 @@
-#include "glew.h"
-//#include "../glew/include/GL/glew.h"
+//#include "glew.h"
+#include "../glew/include/GL/glew.h"
 //#include <GL/glew.h>
-#include "glfw.h"
-//#include "../glfw/include/GL/glfw.h"
+//#include "glfw.h"
+#include "../glfw/include/GL/glfw.h"
 //#include <GL/glfw3.h>
 
 #include <iostream>
 
 #include "uniform_grid.h"
 #include "mesh.h"
-#include "kdtree.h"
+#include "KDTreeCPU.h"
 
 using namespace std;
 
@@ -161,26 +161,21 @@ void drawBoundingBox(boundingBox bb){
 void keypress(int key, int action){
 }
 
+void getBB(KDTreeNode* current, vector<boundingBox>& bbs){
+
+}
+
 int main(){
 
 	mesh* m = new mesh("meshes\\bunny.obj");
 
 	glm::vec3 gridSize = m->bb.max - m->bb.min;
-	
-	/*int* ids = new int[m->numVerts];
-	for (int i=0; i<m->numVerts; i+=1){
-		ids[i] = i;
-	}
-	initCuda(m->numVerts, ids, m->verts, 25, gridSize);
-	findNeighbors(m->numVerts, 25, gridSize, 1.5);
-	freeCudaGrid();
-	delete [] ids;*/
 
-	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
-	grid.findNeighbors(25, 1.5);
+	//hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
+	//grid.findNeighbors(25, 1.5);
 
-	//kdtree kd(m);
-	//kd.construct();
+	KDTreeCPU* kd = new KDTreeCPU(m);
+
 
 	bool run = GL_TRUE;
 
@@ -222,9 +217,12 @@ int main(){
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//drawGrid();
-		drawMeshAsPoints(m);
-		//drawMesh(m);
+		//drawMeshAsPoints(m);
+		drawMesh(m);
 		drawBoundingBox(m->bb);
+		for (int i=0; i<kd->getNumNodes(); i+=1){
+			drawBoundingBox(kd->getBoundingBox(i));
+		}
 		//for (int i=0; i<kd.m_mesh->numTris; i+=1){
 		//	drawBoundingBox(kd.boundingBoxes[i]);
 		//}
@@ -252,6 +250,7 @@ int main(){
 	}
 
 	delete m;
+	delete kd;
 
 	glfwTerminate();
     exit(EXIT_SUCCESS);

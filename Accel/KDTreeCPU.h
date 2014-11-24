@@ -20,7 +20,9 @@ public:
 		right = NULL;
 	}
 
-	~KDTreeNode( void );
+	~KDTreeNode( void )
+	{
+	}
 
 	boundingBox bbox;
 	KDTreeNode *left;
@@ -39,6 +41,9 @@ public:
 
 	void build( mesh *m );
 
+	boundingBox getBoundingBox(int i);
+	int getNumNodes();
+
 private:
 	KDTreeNode *root;
 
@@ -46,7 +51,9 @@ private:
 	std::vector<glm::vec3> verts_xsorted, verts_ysorted, verts_zsorted;
 	std::vector<Triangle*> tris;
 
-	KDTreeNode* build( std::vector<Triangle*> triangles, int depth ) const;
+	std::vector<KDTreeNode*> nodes;
+
+	KDTreeNode* build( std::vector<Triangle*> triangles, int depth );
 };
 
 #endif

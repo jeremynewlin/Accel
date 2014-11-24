@@ -5,6 +5,12 @@
 #include "Triangle.h"
 #include <vector>
 
+enum Axis {
+	XAXIS = 0,
+	YAXIS = 1,
+	ZAXIS = 2
+};
+
 class boundingBox
 {
 public:
@@ -12,6 +18,8 @@ public:
 	boundingBox( std::vector<Triangle*> t );
 
 	glm::vec3 min, max;
+
+	Axis getLongestSide();
 };
 
 #endif

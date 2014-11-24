@@ -8,7 +8,7 @@
 #include <vector>
 
 
-const int NUM_TRIS_PER_NODE = 10;
+const int NUM_TRIS_PER_NODE = 20;
 
 
 class KDTreeNode

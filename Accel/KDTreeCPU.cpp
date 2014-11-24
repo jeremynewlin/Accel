@@ -27,21 +27,18 @@ KDTreeCPU::~KDTreeCPU( void )
 
 void KDTreeCPU::build( mesh *m )
 {
-	// Populate list of vertices.
-	for ( int i = 0; i < m->numVerts; ++i ) {
-		verts.push_back( m->verts[i] );
-	}
-	verts_xsorted = verts;
-	verts_ysorted = verts;
-	verts_zsorted = verts;
-	
-	// Sort vertices on x-, y-, and z-coordinates.
-	std::sort( verts_xsorted.begin(), verts_xsorted.end(), utilityCore::lessThanVec3X() );
-	std::sort( verts_ysorted.begin(), verts_ysorted.end(), utilityCore::lessThanVec3Y() );
-	std::sort( verts_zsorted.begin(), verts_zsorted.end(), utilityCore::lessThanVec3Z() );
-
-	// TODO: When sorting object vertices, vertex indices of mesh triangles must be updated as well.
-	// These sorted lists can be used to implement a less naive kd-tree construction method.
+	//// Populate list of vertices.
+	//for ( int i = 0; i < m->numVerts; ++i ) {
+	//	verts.push_back( m->verts[i] );
+	//}
+	//verts_xsorted = verts;
+	//verts_ysorted = verts;
+	//verts_zsorted = verts;
+	//
+	//// Sort vertices on x-, y-, and z-coordinates.
+	//std::sort( verts_xsorted.begin(), verts_xsorted.end(), utilityCore::lessThanVec3X() );
+	//std::sort( verts_ysorted.begin(), verts_ysorted.end(), utilityCore::lessThanVec3Y() );
+	//std::sort( verts_zsorted.begin(), verts_zsorted.end(), utilityCore::lessThanVec3Z() );
 
 	// Populate list of triangle objects.
 	for ( int i = 0; i < m->numTris; ++i ) {
@@ -64,6 +61,7 @@ KDTreeNode* KDTreeCPU::build( std::vector<Triangle*> triangles, int depth )
 	// Get bounding box that emcompasses all triangles in node.
 	node->bbox = boundingBox( triangles );
 
+	// For visualization.
 	nodes.push_back(node);
 
 	// Base case.
@@ -71,30 +69,26 @@ KDTreeNode* KDTreeCPU::build( std::vector<Triangle*> triangles, int depth )
 		return node;
 	}
 
-	// Compute midpoint of all triangle vertices.
-	glm::vec3 mid( 0.0f, 0.0f, 0.0f );
-	for ( std::vector<Triangle*>::iterator it = triangles.begin(); it != triangles.end(); ++it ) {
-		Triangle *tri = *it;
-		mid += tri->center;
+	// Get longest side of bounding box.
+	Axis longest_side = node->bbox.getLongestSide();
+
+	if ( longest_side == XAXIS ) {
+		std::sort( triangles.begin(), triangles.end(), utilityCore::lessThanTriX() );
 	}
-	mid /= (float)triangles.size();
+	else if ( longest_side == YAXIS ) {
+		std::sort( triangles.begin(), triangles.end(), utilityCore::lessThanTriY() );
+	}
+	else {
+		std::sort( triangles.begin(), triangles.end(), utilityCore::lessThanTriZ() );
+	}
+
+	std::vector<Triangle*>::const_iterator it_front = triangles.begin();
+	std::vector<Triangle*>::const_iterator it_mid = triangles.begin() + ( triangles.size() / 2 );
+	std::vector<Triangle*>::const_iterator it_back = triangles.end();
 
 	// Create left and right trees of triangles.
-	std::vector<Triangle*> left_triangles;
-	std::vector<Triangle*> right_triangles;
-	for ( std::vector<Triangle*>::iterator it = triangles.begin(); it != triangles.end(); ++it ) {
-		Triangle *tri = *it;
-
-		if ( depth % 3 == 0 ) {
-			mid.x >= tri->center.x ? right_triangles.push_back( tri ) : left_triangles.push_back( tri );
-		}
-		else if ( depth % 3 == 1 ) {
-			mid.y >= tri->center.y ? right_triangles.push_back( tri ) : left_triangles.push_back( tri );
-		}
-		else {
-			mid.z >= tri->center.z ? right_triangles.push_back( tri ) : left_triangles.push_back( tri );
-		}
-	}
+	std::vector<Triangle*> left_triangles( it_front, it_mid );
+	std::vector<Triangle*> right_triangles( it_mid + 1, it_back );
 
 	// Recurse.
 	node->left = build( left_triangles, depth + 1 );

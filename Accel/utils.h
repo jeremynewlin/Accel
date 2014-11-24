@@ -44,5 +44,34 @@ namespace utilityCore {
     extern void printMat4(glm::mat4);
     extern void printVec4(glm::vec4);
     extern void printVec3(glm::vec3);
+
+
+    //-----------------------------------------
+    //-------glm::vec3 sort functions----------
+    //-----------------------------------------
+	struct lessThanVec3X
+	{
+		inline bool operator() ( const glm::vec3 &a, const glm::vec3 &b )
+		{
+			return ( a.x < b.x );
+		}
+	};
+
+	struct lessThanVec3Y
+	{
+		inline bool operator() ( const glm::vec3 &a, const glm::vec3 &b )
+		{
+			return ( a.y < b.y );
+		}
+	};
+
+	struct lessThanVec3Z
+	{
+		inline bool operator() ( const glm::vec3 &a, const glm::vec3 &b )
+		{
+			return ( a.z < b.z );
+		}
+	};
+
 }
 #endif

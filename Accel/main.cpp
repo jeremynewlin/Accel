@@ -1,5 +1,9 @@
 #include "glew.h"
+//#include "../glew/include/GL/glew.h"
+//#include <GL/glew.h>
 #include "glfw.h"
+//#include "../glfw/include/GL/glfw.h"
+//#include <GL/glfw3.h>
 
 #include <iostream>
 

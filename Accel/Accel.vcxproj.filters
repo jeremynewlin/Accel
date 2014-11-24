@@ -15,43 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="boundingBox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cudaMat4.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="kdtree.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mesh.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="uniform_grid.cuh">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="uniform_grid.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Triangle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="KDTreeCPU.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="kdtree.cu">
-      <Filter>Source Files</Filter>
-    </CudaCompile>
-    <CudaCompile Include="uniform_grid.cu">
-      <Filter>Source Files</Filter>
-    </CudaCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -61,8 +24,37 @@
     <ClCompile Include="utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="boundingBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="KDTreeCPU.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="uniform_grid.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="uniform_grid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cudaMat4.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="boundingBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KDTreeCPU.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Triangle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

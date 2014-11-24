@@ -11,29 +11,27 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="boundingBox.h" />
-    <ClInclude Include="cudaMat4.h" />
-    <ClInclude Include="kdtree.h" />
-    <ClInclude Include="KDTreeCPU.h" />
-    <ClInclude Include="mesh.h" />
-    <ClInclude Include="Triangle.h" />
-    <ClInclude Include="uniform_grid.cuh" />
-    <ClInclude Include="uniform_grid.h" />
-    <ClInclude Include="utils.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="kdtree.cu" />
-    <CudaCompile Include="uniform_grid.cu" />
-  </ItemGroup>
-  <ItemGroup>
+    <ClCompile Include="boundingBox.cpp" />
     <ClCompile Include="KDTreeCPU.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="uniform_grid.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="boundingBox.h" />
+    <ClInclude Include="cudaMat4.h" />
+    <ClInclude Include="KDTreeCPU.h" />
+    <ClInclude Include="mesh.h" />
+    <ClInclude Include="Triangle.h" />
+    <ClInclude Include="uniform_grid.h" />
+    <ClInclude Include="utils.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{A407DB03-E0FB-4FDF-8339-4179F58F4E96}</ProjectGuid>
-    <RootNamespace>Accel</RootNamespace>
+    <ProjectGuid>{5ECC1E03-F0BA-4FAD-96A7-10A80CA71BCB}</ProjectGuid>
+    <RootNamespace>AccelLocal</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -49,7 +47,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 6.5.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 5.5.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -63,10 +61,12 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\glfw\include\GL;..\glew\include\GL;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;glew32.lib;glut32.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glu32.lib;GLFWDLL.lib;GLFW.lib;opengl32.lib;glew32.lib;glew32s.lib;glew32mxs.lib;glew32mx.lib;cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\glfw\lib;..\glew\lib;%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
       <CompileOut>\$(IntDir)%(Filename)%(Extension).obj</CompileOut>
@@ -78,15 +78,22 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\glfw\include\GL;..\glew\include\GL;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>glu32.lib;GLFWDLL.lib;GLFW.lib;opengl32.lib;glew32.lib;glew32s.lib;glew32mxs.lib;glew32mx.lib;cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\glfw\lib;..\glew\lib;%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
     </Link>
+    <CudaCompile>
+      <CompileOut>\$(IntDir)%(Filename)%(Extension).obj</CompileOut>
+      <CodeGeneration>compute_20,sm_20</CodeGeneration>
+    </CudaCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 6.5.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 5.5.targets" />
   </ImportGroup>
 </Project>

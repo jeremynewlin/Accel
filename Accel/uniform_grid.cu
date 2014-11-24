@@ -372,6 +372,10 @@ hash_grid::hash_grid(int numParticles, glm::vec3* points, glm::vec3 gridSize){
 	cudaMalloc((void**)&c_ids, m_numParticles*sizeof(int));
 	cudaMemcpy( c_ids, m_ids, m_numParticles*sizeof(int), cudaMemcpyHostToDevice);
 
+	c_ids_test = NULL;
+	cudaMalloc((void**)&c_ids_test, m_numParticles*sizeof(int));
+	cudaMemcpy( c_ids_test, m_ids, m_numParticles*sizeof(int), cudaMemcpyHostToDevice);
+
 	c_cellIds = NULL;
 	cudaMalloc((void**)&c_cellIds, m_numParticles*sizeof(int));
 
@@ -510,4 +514,5 @@ hash_grid::~hash_grid(){
 	cudaFree(c_pIds);
 	cudaFree(c_grid);
 	cudaFree(c_ids);
+	cudaFree(c_ids_test);
 }

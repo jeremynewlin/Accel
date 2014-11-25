@@ -46,6 +46,9 @@ private:
 	int* c_ids, *c_cellIds, *c_pIds;
 	int* c_numNeighbors;
 
+	float* c_distances;
+	int* c_ids_test;
+
 };
 
 #endif

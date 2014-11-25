@@ -24,6 +24,7 @@ glm::vec3 lightPos(0,10,0);
 
 bool paused   = false;
 bool drawGridToggle = false, drawHashToggle = false;
+bool printDistances = true;
 
 int currentID = 0;
 int numIDs = 1;
@@ -133,8 +134,8 @@ void drawNeighbors(int particleID, const hash_grid& grid, bool useGrid = true){
 		glm::vec3 p1 = grid.m_points[grid.m_gridNeighbors[particleID*grid.m_maxNeighbors + i]];
 		if (!useGrid) p1 = grid.m_points[grid.m_bruteNeighbors[particleID*grid.m_maxNeighbors + i]];
 
-		glColor4f(1,0,0, 0.5f);
-		if (!useGrid) glColor4f(0,0,1, 0.5f);
+		glColor4f(1,0,0, 0.75f);
+		if (!useGrid) glColor4f(0,0,1, 0.75f);
 
 		glBegin(GL_POINTS); //top
 		glVertex3f(p1.x,p1.y,p1.z);
@@ -213,6 +214,7 @@ void keypress(int key, int action)
 				currentID = (currentID-1);//%numIDs;
 				if (currentID < 0) currentID = numIDs-1;
 				currentID = currentID % numIDs;
+				printDistances = true;
 				break;
 			case 'h':
 			case 'H':
@@ -247,6 +249,7 @@ void keypress(int key, int action)
 			case 's':
 			case 'S':
 				currentID = (currentID+1)%numIDs;
+				printDistances = true;
 				break;
 			case 'z':
 			case 'Z':
@@ -325,6 +328,23 @@ int main(){
 	while(run){
 		frame+=1;
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		if (printDistances){
+			float avgDist = 0;
+			for (int i=0; i<grid.m_bruteNumNeighbors[currentID]; i+=1){
+				avgDist += glm::distance(grid.m_points[currentID], grid.m_points[grid.m_bruteNeighbors[currentID*grid.m_maxNeighbors + i]]);
+			}
+			cout<<"average from brute force: "<<avgDist/grid.m_bruteNumNeighbors[currentID]<<endl;
+
+			float bruteAvg = avgDist;
+
+			avgDist = 0;
+			for (int i=0; i<grid.m_gridNumNeighbors[currentID]; i+=1){
+				avgDist += glm::distance(grid.m_points[currentID], grid.m_points[grid.m_gridNeighbors[currentID*grid.m_maxNeighbors + i]]);
+			}
+			cout<<"average from grid       : "<<avgDist/grid.m_gridNumNeighbors[currentID]<<endl;
+			printDistances = false;
+		}
 
 		if (drawGridToggle) drawGrid(grid.m_gridSize, h, glm::vec3()/*-(m->bb.max-m->bb.min)/2.0f*/);
 		drawMeshAsPoints(m);

@@ -307,11 +307,11 @@ int main(){
 	gridSize.y = floor(gridSize.y)+1.0f;
 	gridSize.z = floor(gridSize.z)+1.0f;
 
-	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
+	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize, false);
 	grid.findNeighbors(50, h);
 
 	// Initialize kd-tree for mesh.
-	KDTreeCPU kd_tree = KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
+	//KDTreeCPU kd_tree = KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
 
 	numIDs = grid.m_numParticles;
 

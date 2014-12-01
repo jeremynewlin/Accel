@@ -18,7 +18,7 @@ bool checkCUDAError(const char *msg) {
   return true;
 } 
 
-__device__ 
+__host__ __device__ 
 float lengthSquared(glm::vec3 p){
     return p.x*p.x + p.y*p.y + p.z*p.z;
 }
@@ -230,129 +230,10 @@ void resetNumNeighbors(int numParticles, int* numNeighbors){
 	}
 }
 
-__global__
-void hello(int *a, int *b)
-{
-	a[threadIdx.x] += b[threadIdx.x];
-}
 
-void initCuda(int numParticles, int* ids, glm::vec3* positions, int maxNeighbors, glm::vec3 gridSize){
-	cudapositions = NULL;
-	cudaMalloc((void**)&cudapositions, numParticles*sizeof(glm::vec3));
-	cudaMemcpy( cudapositions, positions, numParticles*sizeof(glm::vec3), cudaMemcpyHostToDevice);
+hash_grid::hash_grid(int numParticles, glm::vec3* points, glm::vec3 gridSize, bool useGPU){
 
-	cudaneighbors = NULL;
-	cudaMalloc((void**)&cudaneighbors, numParticles*maxNeighbors*sizeof(int*));
-
-	cudanumNeighbors = NULL;
-	cudaMalloc((void**)&cudanumNeighbors, numParticles*sizeof(int));
-	cudaMemcpy( cudanumNeighbors, ids, numParticles*sizeof(int), cudaMemcpyHostToDevice);
-	
-	cudaids = NULL;
-	cudaMalloc((void**)&cudaids, numParticles*sizeof(int));
-	cudaMemcpy( cudaids, ids, numParticles*sizeof(int), cudaMemcpyHostToDevice);
-
-	cudacellIds = NULL;
-	cudaMalloc((void**)&cudacellIds, numParticles*sizeof(int));
-
-	cudapIds = NULL;
-	cudaMalloc((void**)&cudapIds, numParticles*sizeof(int));
-
-	cudagrid = NULL;
-	cudaMalloc((void**)&cudagrid, int(gridSize.x*gridSize.y*gridSize.z)*sizeof(pair<int,int>));
-}
-
-void findNeighbors(int numParticles, int maxNeighbors, glm::vec3 gridSize, float h){
-	dim3 threadsPerBlock(64);
-	dim3 fullBlocksPerGrid(numParticles/8+1);
-
-	dim3 threadsPerBlockGrid(64);
-	dim3 fullBlocksPerGridGrid(int(gridSize.x*gridSize.y*gridSize.z)/8+1);
-
-	hashParticlesToGridKernel<<<fullBlocksPerGrid, threadsPerBlock>>>(numParticles, cudacellIds, cudapIds, cudapositions, gridSize, cudaids, h);
-	cudaThreadSynchronize();
-	checkCUDAError("hasing particles");
-
-	thrust::device_ptr<int> thrustCellIds = thrust::device_pointer_cast(cudacellIds);
-	thrust::device_ptr<int> thrustPIds = thrust::device_pointer_cast(cudapIds);
-	thrust::sort_by_key(thrustCellIds, thrustCellIds+numParticles, thrustPIds);
-
-	resetGrid<<<fullBlocksPerGridGrid, threadsPerBlockGrid>>>(int(gridSize.x*gridSize.y*gridSize.z), cudagrid);
-	checkCUDAError("reset grid");
-	setGridValuesKernel<<<fullBlocksPerGrid, threadsPerBlock>>>(numParticles, int(gridSize.x*gridSize.y*gridSize.z), cudagrid, cudacellIds);
-	checkCUDAError("set values in grid neighbor");
-	
-	cout<<"ERGWERTH"<<endl;
-
-	findNeighborsUsingGridKernel<<<fullBlocksPerGrid, threadsPerBlock>>>(numParticles, h, maxNeighbors, cudapositions, cudaneighbors, cudanumNeighbors, cudagrid, cudapIds, int(gridSize.x*gridSize.y*gridSize.z), cudaids, gridSize, cudacellIds);
-
-	int* numNeighbors = new int[numParticles];
-	cudaMemcpy( numNeighbors, cudanumNeighbors, numParticles*sizeof(int), cudaMemcpyDeviceToHost);
-	checkCUDAError(" copying num neighbor dbhtrwhnwe ");
-
-	int avg = 0;
-	for (int i=0; i<numParticles; i++){
-		avg+=numNeighbors[i];
-	}
-
-	cout<<"average number of neighbors with grid: "<<float(avg)/float(numParticles)<<endl;
-
-	delete [] numNeighbors;
-
-	checkCUDAError(" finding neighbors using grid ");
-}
-
-void freeCudaGrid(){
-	cudaFree(cudapositions);
-	cudaFree(cudacellIds);
-	cudaFree(cudapIds);
-	cudaFree(cudagrid);
-	cudaFree(cudanumNeighbors);
-	cudaFree(cudaneighbors);
-	cudaFree(cudaids);
-}
-
-void test_uniform_grid(){
-
-	int * a = new int[10];
-	int * b = new int[10];
-
-	for (int i=0; i<10; i+=1){
-		a[i] = i;
-		b[i] = i;
-	}
-	
-	dim3 threadsPerBlock(16);
-	dim3 fullBlocksPerGrid(64);
-
-	int *cudaA, *cudaB;
-
-	cudaMalloc((void**)&cudaA, 10*sizeof(int));
-	cudaMalloc((void**)&cudaB, 10*sizeof(int));
-
-	cudaMemcpy(cudaA, a, 10*sizeof(int), cudaMemcpyHostToDevice);
-	cudaMemcpy(cudaB, b, 10*sizeof(int), cudaMemcpyHostToDevice);
-
-	hello<<<fullBlocksPerGrid, threadsPerBlock>>>(cudaA, cudaB);
-
-	cudaMemcpy(a, cudaA, 10*sizeof(int), cudaMemcpyDeviceToHost);
-	cudaMemcpy(b, cudaB, 10*sizeof(int), cudaMemcpyDeviceToHost);
-
-	for (int i=0; i<10; i+=1){
-		cout<<a[i]<<endl;
-	}
-
-	cudaFree(cudaA);
-	cudaFree(cudaB);
-
-	delete [] a;
-	delete [] b;
-
-
-}
-
-
-hash_grid::hash_grid(int numParticles, glm::vec3* points, glm::vec3 gridSize){
+	m_useGPU = useGPU;
 
 	m_numParticles = numParticles;
 	m_points = new glm::vec3[m_numParticles];
@@ -363,6 +244,10 @@ hash_grid::hash_grid(int numParticles, glm::vec3* points, glm::vec3 gridSize){
 	}
 
 	m_gridSize = gridSize;
+
+	m_grid = new pair<int,int>[int(m_gridSize.x*m_gridSize.y*m_gridSize.z)];
+	m_cellIds = new int[m_numParticles];
+	m_pIds = new int[m_numParticles];
 
 	c_positions = NULL;
 	cudaMalloc((void**)&c_positions, m_numParticles*sizeof(glm::vec3));
@@ -406,12 +291,6 @@ void hash_grid::findNeighbors(int maxNeighbors, float h){
 	m_maxNeighbors = maxNeighbors;
 	m_h = h;
 
-	c_neighbors = NULL;
-	cudaMalloc((void**)&c_neighbors, m_numParticles*m_maxNeighbors*sizeof(int*));
-
-	c_numNeighbors = NULL;
-	cudaMalloc((void**)&c_numNeighbors, m_numParticles*sizeof(int));
-
 	m_gridNeighbors = new int[m_numParticles*m_maxNeighbors];
 	m_bruteNeighbors = new int[m_numParticles*m_maxNeighbors];
 	m_gridNumNeighbors = new int[m_numParticles];
@@ -419,15 +298,26 @@ void hash_grid::findNeighbors(int maxNeighbors, float h){
 
 	neighborsAlloc = true;
 
+	c_neighbors = NULL;
+	cudaMalloc((void**)&c_neighbors, m_numParticles*m_maxNeighbors*sizeof(int*));
+
+	c_numNeighbors = NULL;
+	cudaMalloc((void**)&c_numNeighbors, m_numParticles*sizeof(int));
+
+	if (m_useGPU) findNeighborsGPU();
+	else findNeighborsCPU();
+}
+
+void hash_grid::findNeighborsGPU(){
+	
 	dim3 threadsPerBlock(64);
 	dim3 fullBlocksPerGrid(m_numParticles/8+1);
 
 	dim3 threadsPerBlockGrid(64);
 	dim3 fullBlocksPerGridGrid(int(m_gridSize.x*m_gridSize.y*m_gridSize.z)/8+1);
 
-
 	hashParticlesToGridKernel<<<fullBlocksPerGrid, threadsPerBlock>>>
-		(m_numParticles, c_cellIds, c_pIds, c_positions, m_gridSize, c_ids, h);
+		(m_numParticles, c_cellIds, c_pIds, c_positions, m_gridSize, c_ids, m_h);
 	cudaThreadSynchronize();
 	
 	checkCUDAError("hashing particles");
@@ -450,7 +340,7 @@ void hash_grid::findNeighbors(int maxNeighbors, float h){
 	resetNumNeighbors<<<fullBlocksPerGrid, threadsPerBlock>>>
 		(m_numParticles, c_numNeighbors);
 	findNeighborsUsingGridKernel<<<fullBlocksPerGrid, threadsPerBlock>>>
-		(m_numParticles, h, m_maxNeighbors, c_positions, c_neighbors, c_numNeighbors, c_grid, 
+		(m_numParticles, m_h, m_maxNeighbors, c_positions, c_neighbors, c_numNeighbors, c_grid, 
 		c_pIds, int(m_gridSize.x*m_gridSize.y*m_gridSize.z), c_ids, m_gridSize, c_cellIds);
 
 	cudaMemcpy( m_gridNumNeighbors, c_numNeighbors, m_numParticles*sizeof(int), cudaMemcpyDeviceToHost);
@@ -470,7 +360,7 @@ void hash_grid::findNeighbors(int maxNeighbors, float h){
 	resetNumNeighbors<<<fullBlocksPerGrid, threadsPerBlock>>>
 		(m_numParticles, c_numNeighbors);
 	findNeighborsKernel<<<fullBlocksPerGrid, threadsPerBlock>>>
-		(m_numParticles, c_positions, c_neighbors, c_numNeighbors, h, m_maxNeighbors, c_ids);
+		(m_numParticles, c_positions, c_neighbors, c_numNeighbors, m_h, m_maxNeighbors, c_ids);
 
 	cudaMemcpy( m_bruteNumNeighbors, c_numNeighbors, m_numParticles*sizeof(int), cudaMemcpyDeviceToHost);
 	checkCUDAError(" copying num neighbor dbhtrwhnwe ");
@@ -488,6 +378,180 @@ void hash_grid::findNeighbors(int maxNeighbors, float h){
 	checkCUDAError(" finding neighbors using grid ");
 }
 
+void hash_grid::findNeighborsCPU(){
+	for (int index = 0; index<m_numParticles; index+=1){
+		m_gridNumNeighbors[index] = 0;
+		m_bruteNumNeighbors[index] = 0;
+	}
+
+	for (int i = 0; i<m_numParticles; i+=1){
+		int index = m_ids[i];
+		m_cellIds[index] = hashParticle(index);
+		m_pIds[index] = index;
+	}
+
+	thrust::device_ptr<int> thrustCellIds = thrust::device_pointer_cast(m_cellIds);
+	thrust::device_ptr<int> thrustPIds = thrust::device_pointer_cast(m_pIds);
+	thrust::sort_by_key(m_cellIds, m_cellIds+m_numParticles, m_pIds);
+	
+	int numGridCells = int(m_gridSize.x * m_gridSize.y * m_gridSize.z);
+	for (int index = 0; index<numGridCells; index+=1){
+		m_grid[index].first = -1;
+		m_grid[index].second = -1;
+	}
+
+	for (int index = 0; index<m_numParticles; index+=1){
+		if (index<m_numParticles){
+			int cellId = m_cellIds[index];
+			if (index==0){
+				m_grid[cellId].first = index;
+			}
+			else{
+				if (cellId == m_cellIds[index-1]){
+					if (index > m_grid[cellId].second){
+						m_grid[cellId].second = index;
+					}
+				}
+				else{
+					m_grid[cellId].first = index;
+				}
+			}
+		}
+	}
+
+	findNeighborsUsingGridCPU();
+}
+
+void hash_grid::findNeighborsUsingGridCPU(){
+	
+	int numGridCells = int(m_gridSize.x * m_gridSize.y * m_gridSize.z);
+
+	for (int i=0; i<m_numParticles; i+=1){
+		int index = m_ids[i];
+		m_gridNumNeighbors[index] = 0;
+
+		int cellIdOriginal = hashParticle(index);
+		if (cellIdOriginal<0 || cellIdOriginal>numGridCells-1) return;
+		//search for m_gridNeighbors in 3x3x3 neighbor grid cells
+		//favors closer neighboring cells
+		for (int cell=0; cell<27; cell++){
+			int cellId1 = m_grid[cellIdOriginal].first;
+			int cellId2 = m_grid[cellIdOriginal].second;
+			
+			if (m_gridNumNeighbors[index]>=m_maxNeighbors){
+				break;
+			}
+
+			int cellId = cellIdOriginal;
+
+			if (cell==1){ //+x
+				cellId = cellId+1;
+			}
+			else if (cell==2){ //-x
+				cellId = cellId-1;
+			}
+			else if (cell==3){ //+y
+				cellId = cellId+m_gridSize.x;
+			}
+			else if (cell==4){ //+z
+				cellId = cellId+m_gridSize.x*m_gridSize.y;
+			}
+			else if (cell==5){ //-z
+				cellId = cellId-m_gridSize.x*m_gridSize.y;
+			}
+			else if (cell==6){ //-y
+				cellId = cellId-m_gridSize.x;
+			}
+			else if (cell==7){ //+x +y
+				cellId = cellId+m_gridSize.x+1;
+			}
+			else if (cell==8){ //+x +z
+				cellId = cellId+m_gridSize.x*m_gridSize.y+1;
+			}
+			else if (cell==9){ //+x -y
+				cellId = cellId-m_gridSize.x+1;
+			}
+			else if (cell==10){ //+x -z
+				cellId = cellId-m_gridSize.x*m_gridSize.y+1;
+			}
+			else if (cell==11){ //-x +y
+				cellId = cellId+m_gridSize.x-1;
+			}
+			else if (cell==12){ //-x -y
+				cellId = cellId-m_gridSize.x-1;
+			}
+			else if (cell==13){ //-x +z
+				cellId = cellId+m_gridSize.x*m_gridSize.y-1;
+			} 
+			else if (cell==14){ //-x -z
+				cellId = cellId-m_gridSize.x*m_gridSize.y-1;
+			}
+			else if (cell==15){ //+y +z
+				cellId = cellId+m_gridSize.x+m_gridSize.x*m_gridSize.y;
+			}
+			else if (cell==16){ //+y -z
+				cellId = cellId+m_gridSize.x-m_gridSize.x*m_gridSize.y;
+			}
+			else if (cell==17){ //-y +z
+				cellId = cellId-m_gridSize.x+m_gridSize.x*m_gridSize.y;
+			}
+			else if (cell==18){ //-y -z
+				cellId = cellId-m_gridSize.x-m_gridSize.x*m_gridSize.y;
+			}
+			else if (cell==19){ //+x +y +z
+				cellId = cellId+m_gridSize.x*m_gridSize.y+m_gridSize.x+1;
+			}
+			else if (cell==20){ //+x -y +z
+				cellId = cellId+m_gridSize.x*m_gridSize.y-m_gridSize.x+1;
+			}
+			else if (cell==21){ //+x +y -z
+				cellId = cellId-m_gridSize.x*m_gridSize.y+m_gridSize.x+1;
+			}
+			else if (cell==22){ //+x -y -z
+				cellId = cellId-m_gridSize.x*m_gridSize.y-m_gridSize.x+1;
+			}
+			else if (cell==23){ //-x +y +z
+				cellId = cellId+m_gridSize.x*m_gridSize.y+m_gridSize.x-1;
+			}
+			else if (cell==24){ //-x -y +z
+				cellId = cellId+m_gridSize.x*m_gridSize.y-m_gridSize.x-1;
+			}
+			else if (cell==25){ //-x +y -z
+				cellId = cellId-m_gridSize.x*m_gridSize.y+m_gridSize.x-1;
+			}
+			else if (cell==26){ //-x -y -z
+				cellId = cellId-m_gridSize.x*m_gridSize.y-m_gridSize.x-1;
+			}
+
+			//sanity check
+			if (cellId<0 || cellId>numGridCells-1) continue;
+
+			cellId1 = m_grid[cellId].first;
+			if (cellId1==-1) continue;
+			cellId2 = m_grid[cellId].second;
+			if (cellId2==-1) cellId2=cellId1;
+			
+			if (cellId1>m_numParticles-1 || cellId1<0 || cellId2>m_numParticles-1 || cellId2<0) continue;
+
+			int jid = m_ids[m_pIds[cellId1]];
+			if (lengthSquared(m_points[index]-m_points[jid])<m_h*m_h && m_gridNumNeighbors[index]<m_maxNeighbors){
+				int nid = index*m_maxNeighbors+m_gridNumNeighbors[index];
+				m_gridNeighbors[nid]=jid;
+				m_gridNumNeighbors[index]+=1;
+			}
+
+			for (int i=cellId1; i<cellId2+1; i+=1){
+				int jid = m_ids[m_pIds[i]];
+				if (lengthSquared(m_points[index]-m_points[jid])<m_h*m_h && m_gridNumNeighbors[index]<m_maxNeighbors){
+					int nid = index*m_maxNeighbors+m_gridNumNeighbors[index];
+					m_gridNeighbors[nid]=jid;
+					m_gridNumNeighbors[index]+=1;
+				}
+			}
+		}
+	}
+}
+
 int hash_grid::hashParticle(int id) const{
 	glm::vec3 p = m_points[id];
 	int x = p.x/m_h;
@@ -499,6 +563,10 @@ int hash_grid::hashParticle(int id) const{
 hash_grid::~hash_grid(){
 
 	delete [] m_points;
+	delete [] m_ids;
+	delete [] m_grid;
+	delete [] m_cellIds;
+	delete [] m_pIds;
 
 	if (neighborsAlloc){
 		cudaFree(c_numNeighbors);

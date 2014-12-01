@@ -8,12 +8,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
 
-void initCuda(int numParticles, int* ids, glm::vec3* positions, int maxNeighbors, glm::vec3 gridSize);
-void findNeighbors(int numParticles, int maxNeighbors, glm::vec3 gridSize, float h);
-void freeCudaGrid();
-
-void test_uniform_grid();
-
 class hash_grid{
 public:
 	int m_numParticles;
@@ -28,7 +22,7 @@ public:
 	float m_h;
 
 public:
-	hash_grid(int numParticles, glm::vec3* points, glm::vec3 gridSize);
+	hash_grid(int numParticles, glm::vec3* points, glm::vec3 gridSize, bool useGPU = true);
 
 	void findNeighbors(int maxNeighbors, float h);
 
@@ -38,13 +32,21 @@ public:
 
 private:
 
+	void findNeighborsGPU();
+	void findNeighborsCPU();
+	void findNeighborsUsingGridCPU();
+
 	bool neighborsAlloc;
+	bool m_useGPU;
 
 	glm::vec3 *c_positions;
 	std::pair<int, int>* c_grid;
 	int* c_neighbors;
 	int* c_ids, *c_cellIds, *c_pIds;
 	int* c_numNeighbors;
+
+	std::pair<int, int>* m_grid;
+	int *m_cellIds, *m_pIds;
 
 	float* c_distances;
 	int* c_ids_test;

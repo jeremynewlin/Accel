@@ -8,7 +8,8 @@
 #include <vector>
 
 
-const int NUM_TRIS_PER_NODE = 20;
+const int NUM_TRIS_PER_NODE = 50;
+const int MAX_NUM_LEVELS = 20;
 const bool USE_TIGHT_FITTING_BOUNDING_BOXES = true;
 
 
@@ -50,15 +51,17 @@ public:
 	~KDTreeCPU( void );
 
 	KDTreeNode* getRootNode( void );
+	int getMaxNumLevels( void );
 
 private:
 	KDTreeNode *root;
+	int max_num_levels;
 
 	std::vector<Triangle*> mesh_tris;
 
-	KDTreeNode* constructTreeMedianVertexSplit( std::vector<Triangle*> tri_list, boundingBox bounds );
-	//KDTreeNode* constructTreeMedianSpaceSplit( std::vector<Triangle*> tri_list, boundingBox bounds );
-	//KDTreeNode* constructTreeMedianTriangleCentroidSplit( std::vector<Triangle*> tri_list, boundingBox bounds );
+	//KDTreeNode* constructTreeMedianSpaceSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth );
+	KDTreeNode* constructTreeMedianVertexSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth );
+	KDTreeNode* constructTreeMedianTriangleCentroidSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth );
 
 	std::vector<glm::vec3> getVertListFromTriList( std::vector<Triangle*> tri_list );
 };

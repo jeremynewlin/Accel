@@ -20,7 +20,8 @@ public:
 	Intersections( void );
 	~Intersections( void );
 
-	static bool AABBIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 &hit_point )
+	static bool AABBIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 &hit_point );
+	static bool TriIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec3 &hit_point );
 };
 
 #endif

@@ -308,7 +308,7 @@ int main(){
 	gridSize.z = floor(gridSize.z)+1.0f;
 
 	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize, false);
-	grid.findNeighbors(50, h);
+	grid.findNeighbors(50, h, true);
 
 	// Initialize kd-tree for mesh.
 	//KDTreeCPU kd_tree = KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );

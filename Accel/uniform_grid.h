@@ -24,7 +24,7 @@ public:
 public:
 	hash_grid(int numParticles, glm::vec3* points, glm::vec3 gridSize, bool useGPU = true);
 
-	void findNeighbors(int maxNeighbors, float h);
+	void findNeighbors(int maxNeighbors, float h, bool useGrid);
 
 	int hashParticle(int id) const;
 
@@ -32,9 +32,10 @@ public:
 
 private:
 
-	void findNeighborsGPU();
-	void findNeighborsCPU();
+	void findNeighborsGPU(bool useGrid);
+	void findNeighborsCPU(bool useGrid);
 	void findNeighborsUsingGridCPU();
+	void findNeighborsUsingBruteCPU();
 
 	bool neighborsAlloc;
 	bool m_useGPU;

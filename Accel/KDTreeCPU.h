@@ -59,7 +59,7 @@ private:
 
 	std::vector<Triangle*> mesh_tris;
 
-	//KDTreeNode* constructTreeMedianSpaceSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth );
+	KDTreeNode* constructTreeMedianSpaceSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth );
 	KDTreeNode* constructTreeMedianVertexSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth );
 	KDTreeNode* constructTreeMedianTriangleCentroidSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth );
 

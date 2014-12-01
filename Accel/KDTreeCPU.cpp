@@ -20,7 +20,8 @@ KDTreeCPU::KDTreeCPU( int num_tris, glm::vec3 *tris, int num_verts, glm::vec3 *v
 	}
 
 	// Build kd-tree and set root node.
-	root = constructTreeMedianTriangleCentroidSplit( mesh_tris, boundingBox( mesh_tris ), 1 );
+	root = constructTreeMedianSpaceSplit( mesh_tris, boundingBox( mesh_tris ), 1 );
+	//root = constructTreeMedianTriangleCentroidSplit( mesh_tris, boundingBox( mesh_tris ), 1 );
 	//root = constructTreeMedianVertexSplit( mesh_tris, boundingBox( mesh_tris ), 1 );
 }
 
@@ -50,22 +51,98 @@ int KDTreeCPU::getMaxNumLevels()
 
 
 ////////////////////////////////////////////////////
-// getVertListFromTriList().
+// constructTreeMedianSpaceSplit().
 ////////////////////////////////////////////////////
-std::vector<glm::vec3> KDTreeCPU::getVertListFromTriList( std::vector<Triangle*> tri_list )
+KDTreeNode* KDTreeCPU::constructTreeMedianSpaceSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth )
 {
-	std::vector<glm::vec3> vert_list;
-	for ( int i = 0; i < tri_list.size(); ++i ) {
-		vert_list.push_back( tri_list[i]->v1 );
-		vert_list.push_back( tri_list[i]->v2 );
-		vert_list.push_back( tri_list[i]->v3 );
+	// Create new node.
+	KDTreeNode *node = new KDTreeNode();
+	node->tris = tri_list;
+
+	// Override passed-in bounding box and create "tightest-fitting" bounding box around passed-in list of triangles.
+	if ( USE_TIGHT_FITTING_BOUNDING_BOXES ) {
+		node->bbox = boundingBox( tri_list );
+	}
+	else {
+		node->bbox = bounds;
 	}
 
-	// Remove duplicates.
-	std::sort( vert_list.begin(), vert_list.end(), utilityCore::lessThanVec3X() );
-	vert_list.erase( std::unique( vert_list.begin(), vert_list.end() ), vert_list.end() );
+	// Base case--Number of triangles in node is small enough.
+	if ( tri_list.size() <= NUM_TRIS_PER_NODE ) {
+		if ( curr_depth > max_num_levels ) {
+			max_num_levels = curr_depth;
+		}
+		return node;
+	}
 
-	return vert_list;
+	// Get longest side of bounding box.
+	Axis longest_side = node->bbox.getLongestSide();
+
+	// Set split plane for node.
+	node->split_plane_axis = longest_side;
+
+	// Define "loose-fitting" bounding boxes.
+	boundingBox left_bbox = bounds;
+	boundingBox right_bbox = bounds;
+
+	// Define split plane value.
+	float median_val = 0.0;
+
+	// Sort list of vertices and compute "loose-fitting" bounding boxes.
+	if ( longest_side == XAXIS ) {
+		median_val = bounds.min.x + ( ( bounds.max.x - bounds.min.x ) / 2.0f );
+		left_bbox.max.x = median_val;
+		right_bbox.min.x = median_val;
+	}
+	else if ( longest_side == YAXIS ) {
+		median_val = bounds.min.y + ( ( bounds.max.y - bounds.min.y ) / 2.0f );
+		left_bbox.max.y = median_val;
+		right_bbox.min.y = median_val;
+	}
+	else {
+		median_val = bounds.min.z + ( ( bounds.max.z - bounds.min.z ) / 2.0f );
+		left_bbox.max.z = median_val;
+		right_bbox.min.z = median_val;
+	}
+
+	// Split list of triangles into left and right subtrees.
+	std::vector<Triangle*> left_tris;
+	std::vector<Triangle*> right_tris;
+	for ( int i = 0; i < tri_list.size(); ++i ) {
+		glm::vec3 tri_min = tri_list[i]->getMin();
+		glm::vec3 tri_max = tri_list[i]->getMax();
+
+		if ( longest_side == XAXIS ) {
+			if ( tri_min.x < median_val ) {
+				left_tris.push_back( tri_list[i] );
+			}
+			if ( tri_max.x >= median_val ) {
+				right_tris.push_back( tri_list[i] );
+			}
+		}
+		else if ( longest_side == YAXIS ) {
+			if ( tri_min.y < median_val ) {
+				left_tris.push_back( tri_list[i] );
+			}
+			if ( tri_max.y >= median_val ) {
+				right_tris.push_back( tri_list[i] );
+			}
+		}
+		else {
+			if ( tri_min.z < median_val ) {
+				left_tris.push_back( tri_list[i] );
+			}
+			if ( tri_max.z >= median_val ) {
+				right_tris.push_back( tri_list[i] );
+			}
+		}
+	}
+
+	// Recurse.
+	node->left = constructTreeMedianVertexSplit( left_tris, left_bbox, curr_depth + 1 );
+	node->right = constructTreeMedianVertexSplit( right_tris, right_bbox, curr_depth + 1 );
+
+	return node;
 }
 
 
@@ -163,6 +240,26 @@ KDTreeNode* KDTreeCPU::constructTreeMedianTriangleCentroidSplit( std::vector<Tri
 	node->right = constructTreeMedianVertexSplit( right_tris, right_bbox, curr_depth + 1 );
 
 	return node;
+}
+
+
+////////////////////////////////////////////////////
+// getVertListFromTriList().
+////////////////////////////////////////////////////
+std::vector<glm::vec3> KDTreeCPU::getVertListFromTriList( std::vector<Triangle*> tri_list )
+{
+	std::vector<glm::vec3> vert_list;
+	for ( int i = 0; i < tri_list.size(); ++i ) {
+		vert_list.push_back( tri_list[i]->v1 );
+		vert_list.push_back( tri_list[i]->v2 );
+		vert_list.push_back( tri_list[i]->v3 );
+	}
+
+	// Remove duplicates.
+	std::sort( vert_list.begin(), vert_list.end(), utilityCore::lessThanVec3X() );
+	vert_list.erase( std::unique( vert_list.begin(), vert_list.end() ), vert_list.end() );
+
+	return vert_list;
 }
 
 

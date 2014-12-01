@@ -73,5 +73,33 @@ namespace utilityCore {
 			return ( a.z < b.z );
 		}
 	};
+
+
+    //----------------------------------------
+    //-------Traingle sort functions----------
+    //----------------------------------------
+	struct lessThanTriX
+	{
+		inline bool operator() ( const Triangle *a, const Triangle *b )
+		{
+			return ( a->center.x < b->center.x );
+		}
+	};
+
+	struct lessThanTriY
+	{
+		inline bool operator() ( const Triangle *a, const Triangle *b )
+		{
+			return ( a->center.y < b->center.y );
+		}
+	};
+
+	struct lessThanTriZ
+	{
+		inline bool operator() ( const Triangle *a, const Triangle *b )
+		{
+			return ( a->center.z < b->center.z );
+		}
+	};
 }
 #endif

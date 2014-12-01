@@ -15,10 +15,9 @@ KDTreeCPU::KDTreeCPU( mesh *m )
 
 KDTreeCPU::~KDTreeCPU( void )
 {
-	// TODO: Cleanup.
-	for (int i=0; i<nodes.size(); i+=1){
-		delete nodes[i];
-	}
+	//for (int i=0; i<nodes.size(); i+=1){
+	//	delete nodes[i];
+	//}
 	for (int i=0; i<tris.size(); i+=1){
 		delete tris[i];
 	}
@@ -61,9 +60,6 @@ KDTreeNode* KDTreeCPU::build( std::vector<Triangle*> triangles, int depth )
 	// Get bounding box that emcompasses all triangles in node.
 	node->bbox = boundingBox( triangles );
 
-	// For visualization.
-	nodes.push_back(node);
-
 	// Base case.
 	if ( triangles.size() <= NUM_TRIS_PER_NODE ) {
 		return node;
@@ -97,10 +93,7 @@ KDTreeNode* KDTreeCPU::build( std::vector<Triangle*> triangles, int depth )
 	return node;
 }
 
-boundingBox KDTreeCPU::getBoundingBox(int i){
-	return nodes[i]->bbox;
-}
-
-int KDTreeCPU::getNumNodes(){
-	return nodes.size();
+KDTreeNode* KDTreeCPU::getRootNode()
+{
+	return root;
 }

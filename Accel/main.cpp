@@ -131,8 +131,11 @@ void drawNeighbors(int particleID, const hash_grid& grid, bool useGrid = true){
 
 	for (int i=0; i<numPoints; i+=1){
 
-		glm::vec3 p1 = grid.m_points[grid.m_gridNeighbors[particleID*grid.m_maxNeighbors + i]];
-		if (!useGrid) p1 = grid.m_points[grid.m_bruteNeighbors[particleID*grid.m_maxNeighbors + i]];
+		int id;
+		if (useGrid) id = grid.m_gridNeighbors[particleID*grid.m_maxNeighbors + i];
+		else id = grid.m_bruteNeighbors[particleID*grid.m_maxNeighbors + i];
+		
+		glm::vec3 p1 = grid.m_points[id];
 
 		glColor4f(1,0,0, 0.75f);
 		if (!useGrid) glColor4f(0,0,1, 0.75f);
@@ -262,6 +265,19 @@ void getBB(KDTreeNode* current, vector<boundingBox>& bbs){
 
 }
 
+// Draw kd-tree bounding boxes.
+void drawKDTree( KDTreeNode *curr_node )
+{
+	drawBoundingBox( curr_node->bbox );
+
+	if ( curr_node->left ) {
+		drawKDTree( curr_node->left );
+	}
+	if ( curr_node->right ) {
+		drawKDTree( curr_node->right );
+	}
+}
+
 int main(){
 
 	srand(time(NULL));
@@ -273,7 +289,7 @@ int main(){
 		colors.push_back(glm::vec3(x,y,z));
 	}
 
-	mesh* m = new mesh("meshes\\bunny_small_flat.obj");
+	mesh* m = new mesh("meshes\\bunny_small.obj");
 
 	glm::vec3 gridSize = m->bb.max - m->bb.min;
 	gridSize = glm::vec3(1,1,1);
@@ -287,6 +303,8 @@ int main(){
 
 	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
 	grid.findNeighbors(50, h);
+
+	KDTreeCPU kd_tree = KDTreeCPU( m );
 
 	numIDs = grid.m_numParticles;
 
@@ -342,21 +360,19 @@ int main(){
 			for (int i=0; i<grid.m_gridNumNeighbors[currentID]; i+=1){
 				avgDist += glm::distance(grid.m_points[currentID], grid.m_points[grid.m_gridNeighbors[currentID*grid.m_maxNeighbors + i]]);
 			}
-			cout<<"average from grid       : "<<avgDist/grid.m_gridNumNeighbors[currentID]<<endl;
+			cout<<"average from grid       : "<<avgDist/grid.m_gridNumNeighbors[currentID]<<endl<<endl;
 			printDistances = false;
 		}
 
-		if (drawGridToggle) drawGrid(grid.m_gridSize, h, glm::vec3()/*-(m->bb.max-m->bb.min)/2.0f*/);
-		drawMeshAsPoints(m);
-		if (drawHashToggle) drawHashes(grid);
-		drawNeighbors(currentID, grid, false);
-		drawNeighbors(currentID, grid, true);
+		//if (drawGridToggle) drawGrid(grid.m_gridSize, h, glm::vec3()/*-(m->bb.max-m->bb.min)/2.0f*/);
+		//drawMeshAsPoints(m);
+		//if (drawHashToggle) drawHashes(grid);
+		//drawNeighbors(currentID, grid, false);
+		//drawNeighbors(currentID, grid, true);
 		
-		//drawBoundingBox(m->bb);
-		//drawMesh(m);
-		//for (int i=0; i<kd->getNumNodes(); i+=1){
-		//	drawBoundingBox(kd->getBoundingBox(i));
-		//}
+		// Visualize kd-tree.
+		drawMesh( m );
+		drawKDTree( kd_tree.getRootNode() );
 
 		GLenum errCode;
 		const GLubyte* errString;

@@ -18,6 +18,7 @@ glm::vec3 lowerBound = glm::vec3(0,0,0);
 
 glm::vec3 cameraPos(0.5,0.5,2);
 glm::vec3 cameraTar(0.5,0.5,0);
+
 glm::vec3 cameraUp(0,1,0);
 
 glm::vec3 lightPos(0,10,0);
@@ -306,11 +307,11 @@ int main(){
 	gridSize.y = floor(gridSize.y)+1.0f;
 	gridSize.z = floor(gridSize.z)+1.0f;
 
-	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
-	grid.findNeighbors(50, h);
+	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize, false);
+	grid.findNeighbors(50, h, true);
 
 	// Initialize kd-tree for mesh.
-	KDTreeCPU kd_tree = KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
+	//KDTreeCPU kd_tree = KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
 
 	numIDs = grid.m_numParticles;
 
@@ -369,16 +370,15 @@ int main(){
 			cout<<"average from grid       : "<<avgDist/grid.m_gridNumNeighbors[currentID]<<endl<<endl;
 			printDistances = false;
 		}
-
-		//if (drawGridToggle) drawGrid(grid.m_gridSize, h, glm::vec3()/*-(m->bb.max-m->bb.min)/2.0f*/);
-		//drawMeshAsPoints(m);
-		//if (drawHashToggle) drawHashes(grid);
-		//drawNeighbors(currentID, grid, false);
-		//drawNeighbors(currentID, grid, true);
+		if (drawGridToggle) drawGrid(grid.m_gridSize, h, glm::vec3()/*-(m->bb.max-m->bb.min)/2.0f*/);
+		drawMeshAsPoints(m);
+		if (drawHashToggle) drawHashes(grid);
+		drawNeighbors(currentID, grid, false);
+		drawNeighbors(currentID, grid, true);
 
 		// Visualize kd-tree.
-		drawMesh( m );
-		drawKDTree( kd_tree.getRootNode(), 1, kd_tree.getMaxNumLevels() );
+		//drawMesh( m );
+		//drawKDTree( kd_tree.getRootNode(), 1, kd_tree.getMaxNumLevels() );
 
 		// DEBUG.
 		//std::cin.ignore();

@@ -1,5 +1,6 @@
 #include "KDTreeCPU.h"
 #include <algorithm>
+#include "Intersections.h"
 
 
 ////////////////////////////////////////////////////
@@ -52,30 +53,28 @@ int KDTreeCPU::getMaxNumLevels() const
 
 ////////////////////////////////////////////////////
 // intersect().
-// o: Ray origin. dir: Ray direction.
 ////////////////////////////////////////////////////
-bool KDTreeCPU::intersect( KDTreeNode *node, glm::vec3 o, glm::vec3 dir ) const
+bool KDTreeCPU::intersect( KDTreeNode *node, glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 &hit_point ) const
 {
-	// TODO: If ray intersects node->bbox.
-	if ( false ) {
+	// Test for ray intersetion with current node bounding box.
+	bool intersects_node_bounding_box = Intersections::AABBIntersect( node->bbox, ray_o, ray_dir, hit_point );
+
+	if ( intersects_node_bounding_box ) {
 		if ( node->left || node->right ) {
-			bool hit_left = intersect( node->left, o, dir );
-			bool hit_right = intersect( node->right, o, dir );
+			bool hit_left = intersect( node->left, ray_o, ray_dir, hit_point );
+			bool hit_right = intersect( node->right, ray_o, ray_dir, hit_point );
 			return hit_left || hit_right;
 		}
 		else {
 			// Leaf node.
 			for ( int i = 0; i < node->tris.size(); ++i ) {
-				// TODO: If ray intersects current triangle.
-				if ( false ) {
-					// Record closest intersection point information.
-				}
-			}
+				// Test for ray intersection with current triangle in leaf node.
+				Triangle *tri = node->tris[i];
+				bool intersects_tri = Intersections::TriIntersect( ray_o, ray_dir, tri->v1, tri->v2, tri->v3, hit_point );
 
-			// TODO: If triangle intersection was detected.
-			if ( false ) {
-				// TODO: Set intersection information caller might want to know about.
-				return true;
+				if ( intersects_tri ) {
+					return true;
+				}
 			}
 		}
 	}

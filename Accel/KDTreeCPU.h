@@ -9,6 +9,7 @@
 
 
 const int NUM_TRIS_PER_NODE = 20;
+const bool USE_TIGHT_FITTING_BOUNDING_BOXES = true;
 
 
 class KDTreeNode
@@ -22,35 +23,44 @@ public:
 
 	~KDTreeNode( void )
 	{
+		for ( int i = 0; i < tris.size(); ++i ){
+			delete tris[i];
+		}
+
+		if ( left ) {
+			delete left;
+		}
+		if ( right ) {
+			delete right;
+		}
 	}
 
 	boundingBox bbox;
 	KDTreeNode *left;
 	KDTreeNode *right;
 	std::vector<Triangle*> tris;
+	Axis split_plane_axis;
 };
 
 
 class KDTreeCPU
 {
 public:
-	KDTreeCPU( void );
-	KDTreeCPU( mesh *m );
-
+	KDTreeCPU( int num_tris, glm::vec3 *tris, int num_verts, glm::vec3 *verts );
 	~KDTreeCPU( void );
-
-	void build( mesh *m );
 
 	KDTreeNode* getRootNode( void );
 
 private:
 	KDTreeNode *root;
 
-	std::vector<glm::vec3> verts;
-	std::vector<glm::vec3> verts_xsorted, verts_ysorted, verts_zsorted;
-	std::vector<Triangle*> tris;
+	std::vector<Triangle*> mesh_tris;
 
-	KDTreeNode* build( std::vector<Triangle*> triangles, int depth );
+	KDTreeNode* constructTreeMedianVertexSplit( std::vector<Triangle*> tri_list, boundingBox bounds );
+	//KDTreeNode* constructTreeMedianSpaceSplit( std::vector<Triangle*> tri_list, boundingBox bounds );
+	//KDTreeNode* constructTreeMedianTriangleCentroidSplit( std::vector<Triangle*> tri_list, boundingBox bounds );
+
+	std::vector<glm::vec3> getVertListFromTriList( std::vector<Triangle*> tri_list );
 };
 
 #endif

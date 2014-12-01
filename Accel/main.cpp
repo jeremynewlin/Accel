@@ -304,7 +304,7 @@ int main(){
 	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
 	grid.findNeighbors(50, h);
 
-	KDTreeCPU kd_tree = KDTreeCPU( m );
+	KDTreeCPU kd_tree = KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
 
 	numIDs = grid.m_numParticles;
 

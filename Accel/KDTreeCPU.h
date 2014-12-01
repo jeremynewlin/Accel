@@ -8,7 +8,9 @@
 #include <vector>
 
 
-const int NUM_TRIS_PER_NODE = 10;
+const int NUM_TRIS_PER_NODE = 50;
+const int MAX_NUM_LEVELS = 20;
+const bool USE_TIGHT_FITTING_BOUNDING_BOXES = true;
 
 
 class KDTreeNode
@@ -22,38 +24,58 @@ public:
 
 	~KDTreeNode( void )
 	{
+		for ( int i = 0; i < tris.size(); ++i ){
+			delete tris[i];
+		}
+
+		if ( left ) {
+			delete left;
+		}
+		if ( right ) {
+			delete right;
+		}
 	}
 
 	boundingBox bbox;
 	KDTreeNode *left;
 	KDTreeNode *right;
 	std::vector<Triangle*> tris;
+	Axis split_plane_axis;
 };
 
 
 class KDTreeCPU
 {
 public:
-	KDTreeCPU( void );
-	KDTreeCPU( mesh *m );
-
+	KDTreeCPU( int num_tris, glm::vec3 *tris, int num_verts, glm::vec3 *verts );
 	~KDTreeCPU( void );
 
-	void build( mesh *m );
-
-	boundingBox getBoundingBox(int i);
-	int getNumNodes();
+	KDTreeNode* getRootNode( void ) const;
+	int getMaxNumLevels( void ) const;
 
 private:
 	KDTreeNode *root;
+	int max_num_levels;
 
-	std::vector<glm::vec3> verts;
-	std::vector<glm::vec3> verts_xsorted, verts_ysorted, verts_zsorted;
-	std::vector<Triangle*> tris;
+	std::vector<Triangle*> mesh_tris;
 
-	std::vector<KDTreeNode*> nodes;
+	KDTreeNode* constructTreeMedianSpaceSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth );
+	KDTreeNode* constructTreeMedianVertexSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth );
+	KDTreeNode* constructTreeMedianTriangleCentroidSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth );
 
-	KDTreeNode* build( std::vector<Triangle*> triangles, int depth );
+	bool intersect( KDTreeNode *node, glm::vec3 o, glm::vec3 dir ) const;
+
+	// TODO: Improve efficieny of construction methods. Given a low enough NUM_TRIS_PER_NODE, stack overflows can occur.
+
+	// TODO: Given a ray, perform intersection testing and if the ray does intersect the mesh,
+	// return the intersected node, the intersected point, the normal at the intersected point, and
+	// the distance along the ray from the origin the intersection occurred.
+
+	// TODO: Add AABB box and triangle intersection tests.
+
+	// TODO: Test accuracy of construction and traversal methods by incorporating them into an existing rendering project.
+
+	std::vector<glm::vec3> getVertListFromTriList( std::vector<Triangle*> tri_list ) const;
 };
 
 #endif

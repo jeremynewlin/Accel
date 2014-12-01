@@ -40,3 +40,12 @@ boundingBox::boundingBox( std::vector<Triangle*> t )
 	max = tmp_max;
 	min = tmp_min;
 }
+
+
+Axis boundingBox::getLongestSide()
+{
+	float xlength = fabs( max.x - min.x );
+	float ylength = fabs( max.y - min.y );
+	float zlength = fabs( max.z - min.z );
+	return ( xlength > ylength && xlength > zlength ) ? XAXIS : ( ylength > zlength ? YAXIS : ZAXIS );
+}

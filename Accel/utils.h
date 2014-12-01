@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 #include "cudaMat4.h"
+#include "Triangle.h"
 
 #define PI                          3.1415926535897932384626422832795028841971
 #define TWO_PI                      6.2831853071795864769252867665590057683943
@@ -73,5 +74,32 @@ namespace utilityCore {
 		}
 	};
 
+
+    //----------------------------------------
+    //-------Traingle sort functions----------
+    //----------------------------------------
+	struct lessThanTriX
+	{
+		inline bool operator() ( const Triangle *a, const Triangle *b )
+		{
+			return ( a->center.x < b->center.x );
+		}
+	};
+
+	struct lessThanTriY
+	{
+		inline bool operator() ( const Triangle *a, const Triangle *b )
+		{
+			return ( a->center.y < b->center.y );
+		}
+	};
+
+	struct lessThanTriZ
+	{
+		inline bool operator() ( const Triangle *a, const Triangle *b )
+		{
+			return ( a->center.z < b->center.z );
+		}
+	};
 }
 #endif

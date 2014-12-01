@@ -5,7 +5,7 @@
 #include "../glm/glm.hpp"
 
 
-float const EPSILON = pow( 1.0f, -10 );
+const float TEST_EPSILON = pow( 1.0f, -5 );
 
 enum AABBDir {
 	RIGHT = 0,

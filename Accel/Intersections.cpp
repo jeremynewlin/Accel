@@ -56,7 +56,7 @@ bool Intersections::AABBIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 
 
 	// Compute T distances to candidate planes.
 	for ( i = 0; i < 3; ++i ) {
-		if ( quadrant[i] != MIDDLE && ray_dir[i] > EPSILON && ray_dir[i] < -EPSILON ) {
+		if ( quadrant[i] != MIDDLE && ray_dir[i] > TEST_EPSILON && ray_dir[i] < -TEST_EPSILON ) {
 			maxT[i] = ( candidatePlane[i] - ray_o[i]) / ray_dir[i];
 		}
 		else {
@@ -113,7 +113,7 @@ bool Intersections::TriIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 
     det = glm::dot( edge1, pvec );
 
     // If determinant is 0, then ray lies in plane of triangle.
-    if ( det < EPSILON ) {
+    if ( det < TEST_EPSILON ) {
         return false;
     }
 

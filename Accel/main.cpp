@@ -18,6 +18,7 @@ glm::vec3 lowerBound = glm::vec3(0,0,0);
 
 glm::vec3 cameraPos(0.5,0.5,2);
 glm::vec3 cameraTar(0.5,0.5,0);
+
 glm::vec3 cameraUp(0,1,0);
 
 glm::vec3 lightPos(0,10,0);
@@ -273,7 +274,9 @@ int main(){
 		colors.push_back(glm::vec3(x,y,z));
 	}
 
-	mesh* m = new mesh("meshes\\bunny_small_flat.obj");
+	mesh* m = new mesh("meshes\\bunny_small.obj");
+
+	KDTreeCPU* kd = new KDTreeCPU(m);
 
 	glm::vec3 gridSize = m->bb.max - m->bb.min;
 	gridSize = glm::vec3(1,1,1);
@@ -346,17 +349,17 @@ int main(){
 			printDistances = false;
 		}
 
-		if (drawGridToggle) drawGrid(grid.m_gridSize, h, glm::vec3()/*-(m->bb.max-m->bb.min)/2.0f*/);
+		/*if (drawGridToggle) drawGrid(grid.m_gridSize, h, glm::vec3());
 		drawMeshAsPoints(m);
 		if (drawHashToggle) drawHashes(grid);
 		drawNeighbors(currentID, grid, false);
-		drawNeighbors(currentID, grid, true);
+		drawNeighbors(currentID, grid, true);*/
 		
-		//drawBoundingBox(m->bb);
-		//drawMesh(m);
-		//for (int i=0; i<kd->getNumNodes(); i+=1){
-		//	drawBoundingBox(kd->getBoundingBox(i));
-		//}
+		drawBoundingBox(m->bb);
+		drawMesh(m);
+		for (int i=0; i<kd->getNumNodes(); i+=1){
+			drawBoundingBox(kd->getBoundingBox(i));
+		}
 
 		GLenum errCode;
 		const GLubyte* errString;
@@ -381,6 +384,7 @@ int main(){
 	}
 
 	delete m;
+	delete kd;
 
 	glfwTerminate();
     exit(EXIT_SUCCESS);

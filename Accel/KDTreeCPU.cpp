@@ -39,14 +39,48 @@ KDTreeCPU::~KDTreeCPU()
 // Getters.
 ////////////////////////////////////////////////////
 
-KDTreeNode* KDTreeCPU::getRootNode()
+KDTreeNode* KDTreeCPU::getRootNode() const
 {
 	return root;
 }
 
-int KDTreeCPU::getMaxNumLevels()
+int KDTreeCPU::getMaxNumLevels() const
 {
 	return max_num_levels;
+}
+
+
+////////////////////////////////////////////////////
+// intersect().
+// o: Ray origin. dir: Ray direction.
+////////////////////////////////////////////////////
+bool KDTreeCPU::intersect( KDTreeNode *node, glm::vec3 o, glm::vec3 dir ) const
+{
+	// TODO: If ray intersects node->bbox.
+	if ( false ) {
+		if ( node->left || node->right ) {
+			bool hit_left = intersect( node->left, o, dir );
+			bool hit_right = intersect( node->right, o, dir );
+			return hit_left || hit_right;
+		}
+		else {
+			// Leaf node.
+			for ( int i = 0; i < node->tris.size(); ++i ) {
+				// TODO: If ray intersects current triangle.
+				if ( false ) {
+					// Record closest intersection point information.
+				}
+			}
+
+			// TODO: If triangle intersection was detected.
+			if ( false ) {
+				// TODO: Set intersection information caller might want to know about.
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 
@@ -246,7 +280,7 @@ KDTreeNode* KDTreeCPU::constructTreeMedianTriangleCentroidSplit( std::vector<Tri
 ////////////////////////////////////////////////////
 // getVertListFromTriList().
 ////////////////////////////////////////////////////
-std::vector<glm::vec3> KDTreeCPU::getVertListFromTriList( std::vector<Triangle*> tri_list )
+std::vector<glm::vec3> KDTreeCPU::getVertListFromTriList( std::vector<Triangle*> tri_list ) const
 {
 	std::vector<glm::vec3> vert_list;
 	for ( int i = 0; i < tri_list.size(); ++i ) {

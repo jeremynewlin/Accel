@@ -54,15 +54,15 @@ int KDTreeCPU::getMaxNumLevels() const
 ////////////////////////////////////////////////////
 // intersect().
 ////////////////////////////////////////////////////
-bool KDTreeCPU::intersect( KDTreeNode *node, glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 &hit_point ) const
+bool KDTreeCPU::intersect( KDTreeNode *node, glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 &hit_point, glm::vec3 &normal ) const
 {
 	// Test for ray intersetion with current node bounding box.
-	bool intersects_node_bounding_box = Intersections::AABBIntersect( node->bbox, ray_o, ray_dir, hit_point );
+	bool intersects_node_bounding_box = Intersections::AABBIntersect( node->bbox, ray_o, ray_dir );
 
 	if ( intersects_node_bounding_box ) {
 		if ( node->left || node->right ) {
-			bool hit_left = intersect( node->left, ray_o, ray_dir, hit_point );
-			bool hit_right = intersect( node->right, ray_o, ray_dir, hit_point );
+			bool hit_left = intersect( node->left, ray_o, ray_dir, hit_point, normal );
+			bool hit_right = intersect( node->right, ray_o, ray_dir, hit_point, normal );
 			return hit_left || hit_right;
 		}
 		else {
@@ -70,9 +70,11 @@ bool KDTreeCPU::intersect( KDTreeNode *node, glm::vec3 ray_o, glm::vec3 ray_dir,
 			for ( int i = 0; i < node->tris.size(); ++i ) {
 				// Test for ray intersection with current triangle in leaf node.
 				Triangle *tri = node->tris[i];
-				bool intersects_tri = Intersections::TriIntersect( ray_o, ray_dir, tri->v1, tri->v2, tri->v3, hit_point );
+				float t = -1.0f;
+				bool intersects_tri = Intersections::TriIntersect( ray_o, ray_dir, tri->v1, tri->v2, tri->v3, t, normal );
 
 				if ( intersects_tri ) {
+					hit_point = ray_o + ( t * ray_dir );
 					return true;
 				}
 			}

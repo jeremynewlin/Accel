@@ -68,7 +68,7 @@ private:
 	// TODO: Return normal along with intersection point.
 	// TODO: Ensure only closest triangle intersection point is returned.
 
-	bool intersect( KDTreeNode *node, glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 &hit_point ) const;
+	bool intersect( KDTreeNode *node, glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 &hit_point, glm::vec3 &normal ) const;
 
 	std::vector<glm::vec3> getVertListFromTriList( std::vector<Triangle*> tri_list ) const;
 };

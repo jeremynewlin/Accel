@@ -19,7 +19,7 @@ Intersections::~Intersections()
 // Implementation inspired by zacharmarz.
 // https://gamedev.stackexchange.com/questions/18436/most-efficient-aabb-vs-ray-collision-algorithms
 ////////////////////////////////////////////////////
-bool Intersections::AABBIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 &hit_point )
+bool Intersections::AABBIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 ray_dir )
 {
 	glm::vec3 dirfrac( 1.0f / ray_dir.x, 1.0f / ray_dir.y, 1.0f / ray_dir.z );
 
@@ -43,7 +43,6 @@ bool Intersections::AABBIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 
 		return false;
 	}
 
-	hit_point =  ray_o + ( tmin * ray_dir );
 	return true;
 }
 
@@ -53,11 +52,11 @@ bool Intersections::AABBIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 
 // Implementation inspired by Tomas Moller.
 // http://www.graphics.cornell.edu/pubs/1997/MT97.pdf
 ////////////////////////////////////////////////////
-bool Intersections::TriIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec3 &hit_point )
+bool Intersections::TriIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, float &t, glm::vec3 &normal )
 {
     glm::vec3 edge1, edge2, tvec, pvec, qvec;
     float det, inv_det;
-    float t, u, v;
+    float u, v;
 
     // Find vectors for two edges sharing v0.
     edge1 = v1 - v0;
@@ -91,8 +90,24 @@ bool Intersections::TriIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 
     inv_det = 1.0f / det;
     t *= inv_det;
 
-    // Compute hit_point.
-    hit_point = ray_o + ( t * ray_dir );
+    // Compute triangle normal.
+	normal = Intersections::computeTriNormal( v0, v1, v2 );
 
     return true;
+}
+
+
+////////////////////////////////////////////////////
+// computeTriNormal().
+////////////////////////////////////////////////////
+glm::vec3 Intersections::computeTriNormal( const glm::vec3 &p1, const glm::vec3 &p2, const glm::vec3 &p3 )
+{
+	glm::vec3 u = p2 - p3;
+	glm::vec3 v = p1 - p3;
+
+	float nx = u.y * v.z - u.z * v.y;
+	float ny = u.z * v.x - u.x * v.z;
+	float nz = u.x * v.y - u.y * v.x;
+
+	return glm::normalize( glm::vec3( nx, ny, nz ) );
 }

@@ -49,51 +49,56 @@ bool Intersections::AABBIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 
 
 ////////////////////////////////////////////////////
 // Fast, minimum storage ray/triangle intersection test.
-// Implementation inspired by Tomas Moller.
-// http://www.graphics.cornell.edu/pubs/1997/MT97.pdf
+// Implementation inspired by Tomas Moller: http://www.graphics.cornell.edu/pubs/1997/MT97.pdf
+// Additional algorithm details: http://www.lighthouse3d.com/tutorials/maths/ray-triangle-intersection/
 ////////////////////////////////////////////////////
 bool Intersections::TriIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, float &t, glm::vec3 &normal )
 {
-    glm::vec3 edge1, edge2, tvec, pvec, qvec;
-    float det, inv_det;
-    float u, v;
+	glm::vec3 e1, e2, h, s, q;
+	float a, f, u, v;
 
-    // Find vectors for two edges sharing v0.
-    edge1 = v1 - v0;
-    edge2 = v2 - v0;
+	// Find vectors for two edges sharing v0.
+	e1 = v1 - v0;
+	e2 = v2 - v0;
 
-    // Compute determinant.
-    pvec = glm::cross( ray_dir, edge2 );
-    det = glm::dot( edge1, pvec );
+	// Compute determinant.
+	h = glm::cross( ray_dir, e2 );
+	a = glm::dot( e1, h );
 
-    // If determinant is 0, then ray lies in plane of triangle.
-    if ( det < TEST_EPSILON ) {
-        return false;
-    }
+	// If determinant is 0, then ray lies in plane of triangle.
+	if ( a > -INTERSECTION_EPSILON && a < INTERSECTION_EPSILON ) {
+		return false;
+	}
 
-    // Compute u parameter and test bounds.
-    tvec = ray_o - v0;
-    u = glm::dot( tvec, pvec );
-    if ( u < 0.0f || u > det ) {
-        return false;
-    }
+	// Compute u parameter and test bounds.
+	f = 1.0f / a;
+	s = ray_o - v0;
+	u = f * glm::dot( s, h );
 
-    // Compute v parameter and test bounds.
-    qvec = glm::cross( tvec, edge1 );
-    v = glm::dot( ray_dir, qvec );
-    if ( v < 0.0f || ( u + v ) > det ) {
-        return false;
-    }
+	if ( u < 0.0f || u > 1.0f ) {
+		return false;
+	}
 
-    // Compute t. Scale t. Ray intersects triangle.
-    t = glm::dot( edge2, qvec );
-    inv_det = 1.0f / det;
-    t *= inv_det;
+	// Compute v parameter and test bounds.
+	q = glm::cross( s, e1 );
+	v = f * glm::dot( ray_dir, q );
 
-    // Compute triangle normal.
-	normal = Intersections::computeTriNormal( v0, v1, v2 );
+	if ( v < 0.0f || u + v > 1.0f ) {
+		return false;
+	}
 
-    return true;
+	// Compute t to find out where the intersection point lies on the line.
+	t = f * glm::dot( e2, q );
+
+	// There is a ray intersection.
+	if ( t > INTERSECTION_EPSILON ) {
+		normal = Intersections::computeTriNormal( v0, v1, v2 );
+		return true;
+	}
+	// There is a line intersection, but not a ray intersection.
+	else {
+		return false;
+	}
 }
 
 

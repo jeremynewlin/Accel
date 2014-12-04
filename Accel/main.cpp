@@ -291,7 +291,8 @@ void runTimingComparison(hash_grid& grid, float h){
 		bool useGrid = true;
 
 		clock_t t = clock();
-		grid.findNeighbors(nums[i], h, useGrid, useGPU);
+		//grid.findNeighbors(nums[i], h, useGrid, useGPU);
+		grid.findNeighbors(nums[i], h, useGrid);
 		t = clock() - t;
 
 		cout<<"for "<<grid.m_maxNeighbors<<" neighbors, using ";
@@ -401,7 +402,6 @@ int runGrid(){
 	gridSize.z = floor(gridSize.z)+1.0f;
 
 	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
-	grid.findNeighbors(250, h);
 	grid.findNeighbors(250, h, false);
 
 	numIDs = grid.m_numParticles;
@@ -445,27 +445,27 @@ int runGrid(){
 		frame+=1;
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		if (printDistances){
-			float avgDist = 0;
-			for (int i=0; i<grid.m_bruteNumNeighbors[currentID]; i+=1){
-				avgDist += glm::distance(grid.m_points[currentID], grid.m_points[grid.m_bruteNeighbors[currentID*grid.m_maxNeighbors + i]]);
-			}
-			cout<<"average from brute force: "<<avgDist/grid.m_bruteNumNeighbors[currentID]<<endl;
+		//if (printDistances){
+		//	float avgDist = 0;
+		//	for (int i=0; i<grid.m_bruteNumNeighbors[currentID]; i+=1){
+		//		avgDist += glm::distance(grid.m_points[currentID], grid.m_points[grid.m_bruteNeighbors[currentID*grid.m_maxNeighbors + i]]);
+		//	}
+		//	cout<<"average from brute force: "<<avgDist/grid.m_bruteNumNeighbors[currentID]<<endl;
 
-			float bruteAvg = avgDist;
+		//	float bruteAvg = avgDist;
 
-			avgDist = 0;
-			for (int i=0; i<grid.m_gridNumNeighbors[currentID]; i+=1){
-				avgDist += glm::distance(grid.m_points[currentID], grid.m_points[grid.m_gridNeighbors[currentID*grid.m_maxNeighbors + i]]);
-			}
-			cout<<"average from grid       : "<<avgDist/grid.m_gridNumNeighbors[currentID]<<endl<<endl;
-			printDistances = false;
-		}
-		if (drawGridToggle) drawGrid(grid.m_gridSize, h, glm::vec3()/*-(m->bb.max-m->bb.min)/2.0f*/);
-		drawMeshAsPoints(m);
-		if (drawHashToggle) drawHashes(grid);
-		drawNeighbors(currentID, grid, false);
-		drawNeighbors(currentID, grid, true);
+		//	avgDist = 0;
+		//	for (int i=0; i<grid.m_gridNumNeighbors[currentID]; i+=1){
+		//		avgDist += glm::distance(grid.m_points[currentID], grid.m_points[grid.m_gridNeighbors[currentID*grid.m_maxNeighbors + i]]);
+		//	}
+		//	cout<<"average from grid       : "<<avgDist/grid.m_gridNumNeighbors[currentID]<<endl<<endl;
+		//	printDistances = false;
+		//}
+		//if (drawGridToggle) drawGrid(grid.m_gridSize, h, glm::vec3()/*-(m->bb.max-m->bb.min)/2.0f*/);
+		//drawMeshAsPoints(m);
+		//if (drawHashToggle) drawHashes(grid);
+		//drawNeighbors(currentID, grid, false);
+		//drawNeighbors(currentID, grid, true);
 
 		GLenum errCode;
 		const GLubyte* errString;

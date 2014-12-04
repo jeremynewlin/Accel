@@ -1,18 +1,27 @@
 #ifndef KD_TREE_CPU_H
 #define KD_TREE_CPU_H
 
-#include "Triangle.h"
 #include "boundingBox.h"
-#include "mesh.h"
 #include "utils.h"
-#include <vector>
+#include <limits>
 
 
-const int NUM_TRIS_PER_NODE = 50;
-const int MAX_NUM_LEVELS = 20;
-const bool USE_TIGHT_FITTING_BOUNDING_BOXES = true;
+////////////////////////////////////////////////////
+// Constants.
+////////////////////////////////////////////////////
+
+#define XAXIS 0
+#define YAXIS 1
+#define ZAXIS 2
+
+const int NUM_TRIS_PER_NODE = 20;
+const bool USE_TIGHT_FITTING_BOUNDING_BOXES = false;
+const float INFINITY = std::numeric_limits<float>::max();
 
 
+////////////////////////////////////////////////////
+// KDTreeNode.
+////////////////////////////////////////////////////
 class KDTreeNode
 {
 public:
@@ -24,8 +33,8 @@ public:
 
 	~KDTreeNode( void )
 	{
-		for ( int i = 0; i < tris.size(); ++i ){
-			delete tris[i];
+		if ( num_tris > 0 ) {
+			delete[] tri_indices;
 		}
 
 		if ( left ) {
@@ -39,38 +48,51 @@ public:
 	boundingBox bbox;
 	KDTreeNode *left;
 	KDTreeNode *right;
-	std::vector<Triangle*> tris;
-	Axis split_plane_axis;
+	int num_tris;
+	int *tri_indices;
 };
 
 
+////////////////////////////////////////////////////
+// KDTreeCPU.
+////////////////////////////////////////////////////
 class KDTreeCPU
 {
 public:
 	KDTreeCPU( int num_tris, glm::vec3 *tris, int num_verts, glm::vec3 *verts );
 	~KDTreeCPU( void );
 
+	// kd-tree getters.
 	KDTreeNode* getRootNode( void ) const;
-	int getMaxNumLevels( void ) const;
+	int getNumLevels( void ) const;
+	int getNumLeaves( void ) const;
+
+	// Debug methods.
+	void printNumTrianglesInEachNode( KDTreeNode *curr_node, int curr_depth = 1 );
 
 private:
+	// kd-tree variables.
 	KDTreeNode *root;
-	int max_num_levels;
+	int num_levels, num_leaves;
 
-	std::vector<Triangle*> mesh_tris;
+	// Input mesh variables.
+	int num_verts, num_tris;
+	glm::vec3 *verts, *tris;
 
-	// TODO: Improve efficieny of construction methods. Given a low enough NUM_TRIS_PER_NODE, stack overflows can occur.
+	// TODO: Consider precomputing min and max values for all triangles.
+	
+	KDTreeNode* constructTreeMedianSpaceSplit( int num_tris, int *tri_indices, boundingBox bounds, int curr_depth );
 
-	KDTreeNode* constructTreeMedianSpaceSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth );
-	KDTreeNode* constructTreeMedianVertexSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth );
-	KDTreeNode* constructTreeMedianTriangleCentroidSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth );
+	//bool intersect( KDTreeNode *node, glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 &hit_point, glm::vec3 &normal ) const;
 
-	// TODO: Return normal along with intersection point.
-	// TODO: Ensure only closest triangle intersection point is returned.
+	// Bounding box getters.
+	int getLongestBoundingBoxSide( glm::vec3 min, glm::vec3 max );
+	boundingBox computeTightFittingBoundingBox( int num_verts, glm::vec3 *verts );
+	boundingBox computeTightFittingBoundingBox( int num_tris, int *tri_indices );
 
-	bool intersect( KDTreeNode *node, glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 &hit_point, glm::vec3 &normal ) const;
-
-	std::vector<glm::vec3> getVertListFromTriList( std::vector<Triangle*> tri_list ) const;
+	// Triangle getters.
+	float getMinTriValue( int tri_index, int axis );
+	float getMaxTriValue( int tri_index, int axis );
 };
 
 #endif

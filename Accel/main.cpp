@@ -284,8 +284,102 @@ void drawKDTree( KDTreeNode *curr_node, int curr_depth, int max_num_levels )
 	}
 }
 
-int main(){
+void runTimingComparison(hash_grid& grid, float h){
+	int nums[6] = {10, 25, 50, 100, 250, 500};
+	for (int i=0; i<6; i+=1){
+		bool useGPU = true;
+		bool useGrid = true;
 
+		clock_t t = clock();
+		//grid.findNeighbors(nums[i], h, useGrid, useGPU);
+		grid.findNeighbors(nums[i], h, useGrid);
+		t = clock() - t;
+
+		cout<<"for "<<grid.m_maxNeighbors<<" neighbors, using ";
+		if (useGPU) cout<<"gpu ";
+		else cout<<"cpu ";
+
+		if (useGrid) cout<<"grid, ";
+		else cout<<"brute force, ";
+
+		cout<<"the nearest neighbor search took ";
+		cout<<((float)t)/CLOCKS_PER_SEC;
+		cout<<" seconds"<<endl;
+	}
+}
+
+int runKD(){
+	srand(time(NULL));
+	mesh* m = new mesh("meshes\\bunny_small_2.obj");
+
+	bool run = GL_TRUE;
+
+    if(!glfwInit())
+    {
+        exit(EXIT_FAILURE);
+    }
+
+    if(!glfwOpenWindow(static_cast<int>(windowWidth), static_cast<int>(windowHeight), 8, 8, 8, 8, 24, 0, GLFW_WINDOW))
+    {
+        glfwTerminate();
+        exit(EXIT_FAILURE);
+    }
+
+    glewInit();
+    if (!glewIsSupported( "GL_VERSION_2_0 " "GL_ARB_pixel_buffer_object")) {
+            fprintf( stderr, "ERROR: Support for necessary OpenGL extensions missing.");
+            fflush( stderr);
+            return false;
+    }
+
+    glfwSetKeyCallback(keypress);
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glViewport(0, 0, static_cast<GLsizei>(windowWidth), static_cast<GLsizei>(windowHeight));
+	glEnable( GL_POINT_SMOOTH );
+    glEnable( GL_BLEND );
+    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+    glPointSize( 6.0 );
+
+	aimCamera();
+
+	int frame=0;
+	float lastTime = glfwGetTime();
+	while(run){
+		frame+=1;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		GLenum errCode;
+		const GLubyte* errString;
+		if (errCode=glGetError() != GL_NO_ERROR){
+			glfwTerminate();
+			exit(1);
+		}
+
+		if (paused){
+			glfwSetWindowTitle("Paused");
+		}
+		else{
+			float now = glfwGetTime();
+			char fpsInfo[256];
+			sprintf(fpsInfo, "Accel Library Visual Testing | Framerate: %f", 1.0f / (now - lastTime));
+			lastTime = now;
+			glfwSetWindowTitle(fpsInfo);
+		}
+
+		glfwSwapBuffers();
+		run = !glfwGetKey(GLFW_KEY_ESC) && glfwGetWindowParam(GLFW_OPENED);
+	}
+
+	delete m;
+
+	glfwTerminate();
+    exit(EXIT_SUCCESS);
+}
+
+int runGrid(){
 	srand(time(NULL));
 
 	for (int i=0; i<10000; i+=1){
@@ -295,7 +389,7 @@ int main(){
 		colors.push_back(glm::vec3(x,y,z));
 	}
 
-	mesh* m = new mesh("meshes\\bunny_small.obj");
+	mesh* m = new mesh("meshes\\bunny_small_2.obj");
 
 	glm::vec3 gridSize = m->bb.max - m->bb.min;
 	gridSize = glm::vec3(1,1,1);
@@ -307,11 +401,8 @@ int main(){
 	gridSize.y = floor(gridSize.y)+1.0f;
 	gridSize.z = floor(gridSize.z)+1.0f;
 
-	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize, false);
-	grid.findNeighbors(50, h, true);
-
-	// Initialize kd-tree for mesh.
-	KDTreeCPU kd_tree = KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
+	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
+	grid.findNeighbors(250, h, false);
 
 	numIDs = grid.m_numParticles;
 
@@ -376,10 +467,6 @@ int main(){
 		//drawNeighbors(currentID, grid, false);
 		//drawNeighbors(currentID, grid, true);
 
-		// Visualize kd-tree.
-		drawMesh( m );
-		drawKDTree( kd_tree.getRootNode(), 1, kd_tree.getNumLevels() );
-
 		GLenum errCode;
 		const GLubyte* errString;
 		if (errCode=glGetError() != GL_NO_ERROR){
@@ -406,4 +493,10 @@ int main(){
 
 	glfwTerminate();
     exit(EXIT_SUCCESS);
+}
+
+int main(){
+
+	return runGrid();
+	
 }

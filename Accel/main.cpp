@@ -311,7 +311,7 @@ int main(){
 	grid.findNeighbors(50, h, true);
 
 	// Initialize kd-tree for mesh.
-	//KDTreeCPU kd_tree = KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
+	KDTreeCPU kd_tree = KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
 
 	numIDs = grid.m_numParticles;
 
@@ -354,31 +354,31 @@ int main(){
 		frame+=1;
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		if (printDistances){
-			float avgDist = 0;
-			for (int i=0; i<grid.m_bruteNumNeighbors[currentID]; i+=1){
-				avgDist += glm::distance(grid.m_points[currentID], grid.m_points[grid.m_bruteNeighbors[currentID*grid.m_maxNeighbors + i]]);
-			}
-			cout<<"average from brute force: "<<avgDist/grid.m_bruteNumNeighbors[currentID]<<endl;
+		//if (printDistances){
+		//	float avgDist = 0;
+		//	for (int i=0; i<grid.m_bruteNumNeighbors[currentID]; i+=1){
+		//		avgDist += glm::distance(grid.m_points[currentID], grid.m_points[grid.m_bruteNeighbors[currentID*grid.m_maxNeighbors + i]]);
+		//	}
+		//	cout<<"average from brute force: "<<avgDist/grid.m_bruteNumNeighbors[currentID]<<endl;
 
-			float bruteAvg = avgDist;
+		//	float bruteAvg = avgDist;
 
-			avgDist = 0;
-			for (int i=0; i<grid.m_gridNumNeighbors[currentID]; i+=1){
-				avgDist += glm::distance(grid.m_points[currentID], grid.m_points[grid.m_gridNeighbors[currentID*grid.m_maxNeighbors + i]]);
-			}
-			cout<<"average from grid       : "<<avgDist/grid.m_gridNumNeighbors[currentID]<<endl<<endl;
-			printDistances = false;
-		}
-		if (drawGridToggle) drawGrid(grid.m_gridSize, h, glm::vec3()/*-(m->bb.max-m->bb.min)/2.0f*/);
-		drawMeshAsPoints(m);
-		if (drawHashToggle) drawHashes(grid);
-		drawNeighbors(currentID, grid, false);
-		drawNeighbors(currentID, grid, true);
+		//	avgDist = 0;
+		//	for (int i=0; i<grid.m_gridNumNeighbors[currentID]; i+=1){
+		//		avgDist += glm::distance(grid.m_points[currentID], grid.m_points[grid.m_gridNeighbors[currentID*grid.m_maxNeighbors + i]]);
+		//	}
+		//	cout<<"average from grid       : "<<avgDist/grid.m_gridNumNeighbors[currentID]<<endl<<endl;
+		//	printDistances = false;
+		//}
+		//if (drawGridToggle) drawGrid(grid.m_gridSize, h, glm::vec3()/*-(m->bb.max-m->bb.min)/2.0f*/);
+		//drawMeshAsPoints(m);
+		//if (drawHashToggle) drawHashes(grid);
+		//drawNeighbors(currentID, grid, false);
+		//drawNeighbors(currentID, grid, true);
 
 		// Visualize kd-tree.
-		//drawMesh( m );
-		//drawKDTree( kd_tree.getRootNode(), 1, kd_tree.getMaxNumLevels() );
+		drawMesh( m );
+		drawKDTree( kd_tree.getRootNode(), 1, kd_tree.getNumLevels() );
 
 		GLenum errCode;
 		const GLubyte* errString;

@@ -24,10 +24,10 @@
     <ClCompile Include="utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="boundingBox.cpp">
+    <ClCompile Include="KDTreeCPU.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="KDTreeCPU.cpp">
+    <ClCompile Include="Intersections.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -53,7 +53,7 @@
     <ClInclude Include="KDTreeCPU.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Triangle.h">
+    <ClInclude Include="Intersections.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,6 +1,7 @@
 #include "KDTreeCPU.h"
 #include <algorithm>
 #include "Intersections.h"
+#include <iostream>
 
 
 ////////////////////////////////////////////////////
@@ -9,27 +10,35 @@
 
 KDTreeCPU::KDTreeCPU( int num_tris, glm::vec3 *tris, int num_verts, glm::vec3 *verts )
 {
-	max_num_levels = 0;
+	// Set class-level variables.
+	num_levels = 0;
+	num_leaves = 0;
+	this->num_verts = num_verts;
+	this->verts = verts;
+	this->num_tris = num_tris;
+	this->tris = tris;
 
-	// Populate list of triangle objects.
+	// Create list of triangle indices for first level of kd-tree.
+	int *tri_indices = new int[num_tris];
 	for ( int i = 0; i < num_tris; ++i ) {
-		glm::vec3 face = tris[i];
-		glm::vec3 v1 = verts[( int )face[0]];
-		glm::vec3 v2 = verts[( int )face[1]];
-		glm::vec3 v3 = verts[( int )face[2]];
-		mesh_tris.push_back( new Triangle( v1, v2, v3 ) );
+		tri_indices[i] = i;
 	}
 
+	// Compute bounding box for all triangles.
+	boundingBox bbox = computeTightFittingBoundingBox( num_verts, verts );
+
 	// Build kd-tree and set root node.
-	root = constructTreeMedianSpaceSplit( mesh_tris, boundingBox( mesh_tris ), 1 );
-	//root = constructTreeMedianTriangleCentroidSplit( mesh_tris, boundingBox( mesh_tris ), 1 );
-	//root = constructTreeMedianVertexSplit( mesh_tris, boundingBox( mesh_tris ), 1 );
+	root = constructTreeMedianSpaceSplit( num_tris, tri_indices, bbox, 1 );
 }
 
 KDTreeCPU::~KDTreeCPU()
 {
-	for ( int i = 0; i < mesh_tris.size(); ++i ){
-		delete mesh_tris[i];
+	if ( num_verts > 0 ) {
+		delete[] verts;
+	}
+
+	if ( num_tris > 0 ) {
+		delete[] tris;
 	}
 
 	delete root;
@@ -45,85 +54,160 @@ KDTreeNode* KDTreeCPU::getRootNode() const
 	return root;
 }
 
-int KDTreeCPU::getMaxNumLevels() const
+int KDTreeCPU::getNumLevels() const
 {
-	return max_num_levels;
+	return num_levels;
+}
+
+int KDTreeCPU::getNumLeaves( void ) const
+{
+	return num_leaves;
+}
+
+int KDTreeCPU::getLongestBoundingBoxSide( glm::vec3 min, glm::vec3 max )
+{
+	// max > min is guaranteed.
+	float xlength = max.x - min.x;
+	float ylength = max.y - min.y;
+	float zlength = max.z - min.z;
+	return ( xlength > ylength && xlength > zlength ) ? XAXIS : ( ylength > zlength ? YAXIS : ZAXIS );
+}
+
+float KDTreeCPU::getMinTriValue( int tri_index, int axis )
+{
+	glm::vec3 tri = tris[tri_index];
+	glm::vec3 v0 = verts[( int )tri[0]];
+	glm::vec3 v1 = verts[( int )tri[1]];
+	glm::vec3 v2 = verts[( int )tri[2]];
+
+	if ( axis == XAXIS ) {
+		return ( v0.x < v1.x && v0.x < v2.x ) ? v0.x : ( v1.x < v2.x ? v1.x : v2.x );
+	}
+	else if ( axis == YAXIS ) {
+		return ( v0.y < v1.y && v0.y < v2.y ) ? v0.y : ( v1.y < v2.y ? v1.y : v2.y );
+	}
+	else {
+		return ( v0.z < v1.z && v0.z < v2.z ) ? v0.z : ( v1.z < v2.z ? v1.z : v2.z );
+	}
+}
+
+float KDTreeCPU::getMaxTriValue( int tri_index, int axis )
+{
+	glm::vec3 tri = tris[tri_index];
+	glm::vec3 v0 = verts[( int )tri[0]];
+	glm::vec3 v1 = verts[( int )tri[1]];
+	glm::vec3 v2 = verts[( int )tri[2]];
+
+	if ( axis == XAXIS ) {
+		return ( v0.x > v1.x && v0.x > v2.x ) ? v0.x : ( v1.x > v2.x ? v1.x : v2.x );
+	}
+	else if ( axis == YAXIS ) {
+		return ( v0.y > v1.y && v0.y > v2.y ) ? v0.y : ( v1.y > v2.y ? v1.y : v2.y );
+	}
+	else {
+		return ( v0.z > v1.z && v0.z > v2.z ) ? v0.z : ( v1.z > v2.z ? v1.z : v2.z );
+	}
 }
 
 
 ////////////////////////////////////////////////////
-// intersect().
+// Compute tight fitting bounding box around triangles given a list of vertices.
 ////////////////////////////////////////////////////
-bool KDTreeCPU::intersect( KDTreeNode *node, glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 &hit_point, glm::vec3 &normal ) const
+boundingBox KDTreeCPU::computeTightFittingBoundingBox( int num_verts, glm::vec3 *verts )
 {
-	// Test for ray intersetion with current node bounding box.
-	bool intersects_node_bounding_box = Intersections::AABBIntersect( node->bbox, ray_o, ray_dir );
+	// Compute bounding box for input mesh.
+	glm::vec3 max = glm::vec3( -INFINITY, -INFINITY, -INFINITY );
+	glm::vec3 min = glm::vec3( INFINITY, INFINITY, INFINITY );
 
-	if ( intersects_node_bounding_box ) {
-		if ( node->left || node->right ) {
-			bool hit_left = intersect( node->left, ray_o, ray_dir, hit_point, normal );
-			bool hit_right = intersect( node->right, ray_o, ray_dir, hit_point, normal );
-			return hit_left || hit_right;
+	for ( int i = 0; i < num_verts; ++i ) {
+		if ( verts[i].x < min.x ) {
+			min.x = verts[i].x;
 		}
-		else {
-			// Leaf node.
-			for ( int i = 0; i < node->tris.size(); ++i ) {
-				// Test for ray intersection with current triangle in leaf node.
-				Triangle *tri = node->tris[i];
-				float t = -1.0f;
-				bool intersects_tri = Intersections::TriIntersect( ray_o, ray_dir, tri->v1, tri->v2, tri->v3, t, normal );
-
-				if ( intersects_tri ) {
-					hit_point = ray_o + ( t * ray_dir );
-					return true;
-				}
-			}
+		if ( verts[i].y < min.y ) {
+			min.y = verts[i].y;
+		}
+		if ( verts[i].z < min.z ) {
+			min.z = verts[i].z;
+		}
+		if ( verts[i].x > max.x ) {
+			max.x = verts[i].x;
+		}
+		if ( verts[i].y > max.y ) {
+			max.y = verts[i].y;
+		}
+		if ( verts[i].z > max.z ) {
+			max.z = verts[i].z;
 		}
 	}
 
-	return false;
+	boundingBox bbox;
+	bbox.min = min;
+	bbox.max = max;
+
+	return bbox;
+}
+
+
+////////////////////////////////////////////////////
+// Compute tight fitting bounding box around triangles given a list of triangle indices.
+////////////////////////////////////////////////////
+boundingBox KDTreeCPU::computeTightFittingBoundingBox( int num_tris, int *tri_indices )
+{
+	int num_verts = num_tris * 3;
+	glm::vec3 *verts = new glm::vec3[num_verts];
+
+	int verts_index;
+	for ( int i = 0; i < num_tris; ++i ) {
+		glm::vec3 tri = tris[i];
+		verts_index = i * 3;
+		verts[verts_index + 0] = verts[( int )tri[0]];
+		verts[verts_index + 1] = verts[( int )tri[1]];
+		verts[verts_index + 2] = verts[( int )tri[2]];
+	}
+
+	boundingBox bbox = computeTightFittingBoundingBox( num_verts, verts );
+	delete[] verts;
+	return bbox;
 }
 
 
 ////////////////////////////////////////////////////
 // constructTreeMedianSpaceSplit().
 ////////////////////////////////////////////////////
-KDTreeNode* KDTreeCPU::constructTreeMedianSpaceSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth )
+KDTreeNode* KDTreeCPU::constructTreeMedianSpaceSplit( int num_tris, int *tri_indices, boundingBox bounds, int curr_depth )
 {
 	// Create new node.
 	KDTreeNode *node = new KDTreeNode();
-	node->tris = tri_list;
+	node->num_tris = num_tris;
+	node->tri_indices = tri_indices;
 
 	// Override passed-in bounding box and create "tightest-fitting" bounding box around passed-in list of triangles.
 	if ( USE_TIGHT_FITTING_BOUNDING_BOXES ) {
-		node->bbox = boundingBox( tri_list );
+		node->bbox = computeTightFittingBoundingBox( num_tris, tri_indices );
 	}
 	else {
 		node->bbox = bounds;
 	}
 
 	// Base case--Number of triangles in node is small enough.
-	if ( tri_list.size() <= NUM_TRIS_PER_NODE ) {
-		if ( curr_depth > max_num_levels ) {
-			max_num_levels = curr_depth;
+	if ( num_tris <= NUM_TRIS_PER_NODE ) {
+		// Update number of tree levels.
+		if ( curr_depth > num_levels ) {
+			num_levels = curr_depth;
 		}
+
+		// Return leaf node.
+		++num_leaves;
 		return node;
 	}
 
 	// Get longest side of bounding box.
-	Axis longest_side = node->bbox.getLongestSide();
+	int longest_side = getLongestBoundingBoxSide( bounds.min, bounds.max );
 
-	// Set split plane for node.
-	node->split_plane_axis = longest_side;
-
-	// Define "loose-fitting" bounding boxes.
+	// Compute median value for longest side as well as "loose-fitting" bounding boxes.
+	float median_val = 0.0;
 	boundingBox left_bbox = bounds;
 	boundingBox right_bbox = bounds;
-
-	// Define split plane value.
-	float median_val = 0.0;
-
-	// Sort list of vertices and compute "loose-fitting" bounding boxes.
 	if ( longest_side == XAXIS ) {
 		median_val = bounds.min.x + ( ( bounds.max.x - bounds.min.x ) / 2.0f );
 		left_bbox.max.x = median_val;
@@ -140,259 +224,124 @@ KDTreeNode* KDTreeCPU::constructTreeMedianSpaceSplit( std::vector<Triangle*> tri
 		right_bbox.min.z = median_val;
 	}
 
-	// Split list of triangles into left and right subtrees.
-	std::vector<Triangle*> left_tris;
-	std::vector<Triangle*> right_tris;
-	for ( int i = 0; i < tri_list.size(); ++i ) {
-		glm::vec3 tri_min = tri_list[i]->getMin();
-		glm::vec3 tri_max = tri_list[i]->getMax();
+	// Allocate and initialize memory for temporary buffers to hold triangle indices for left and right subtrees.
+	int *temp_left_tri_indices = new int[num_tris];
+	int *temp_right_tri_indices = new int[num_tris];
 
+	// Populate temporary buffers.
+	int left_tri_count = 0, right_tri_count = 0;
+	float min_tri_val, max_tri_val;
+	for ( int i = 0; i < num_tris; ++i ) {
+		// Get min and max triangle values along desired axis.
 		if ( longest_side == XAXIS ) {
-			if ( tri_min.x < median_val ) {
-				left_tris.push_back( tri_list[i] );
-			}
-			if ( tri_max.x >= median_val ) {
-				right_tris.push_back( tri_list[i] );
-			}
+			min_tri_val = getMinTriValue( tri_indices[i], XAXIS );
+			max_tri_val = getMaxTriValue( tri_indices[i], XAXIS );
 		}
 		else if ( longest_side == YAXIS ) {
-			if ( tri_min.y < median_val ) {
-				left_tris.push_back( tri_list[i] );
-			}
-			if ( tri_max.y >= median_val ) {
-				right_tris.push_back( tri_list[i] );
-			}
+			min_tri_val = getMinTriValue( tri_indices[i], YAXIS );
+			max_tri_val = getMaxTriValue( tri_indices[i], YAXIS );
 		}
 		else {
-			if ( tri_min.z < median_val ) {
-				left_tris.push_back( tri_list[i] );
-			}
-			if ( tri_max.z >= median_val ) {
-				right_tris.push_back( tri_list[i] );
-			}
+			min_tri_val = getMinTriValue( tri_indices[i], ZAXIS );
+			max_tri_val = getMaxTriValue( tri_indices[i], ZAXIS );
+		}
+
+		// Update temp_left_tri_indices.
+		if ( min_tri_val < median_val ) {
+			temp_left_tri_indices[i] = tri_indices[i];
+			++left_tri_count;
+		}
+		else {
+			temp_left_tri_indices[i] = -1;
+		}
+
+		// Update temp_right_tri_indices.
+		if ( max_tri_val >= median_val ) {
+			temp_right_tri_indices[i] = tri_indices[i];
+			++right_tri_count;
+		}
+		else {
+			temp_right_tri_indices[i] = -1;
 		}
 	}
 
+	// Allocate memory for lists of triangle indices for left and right subtrees.
+	int *left_tri_indices = new int[left_tri_count];
+	int *right_tri_indices = new int[right_tri_count];
+
+	// Populate lists of triangle indices.
+	int left_index = 0, right_index = 0;
+	for ( int i = 0; i < num_tris; ++i ) {
+		if ( temp_left_tri_indices[i] != -1 ) {
+			left_tri_indices[left_index] = temp_left_tri_indices[i];
+			++left_index;
+		}
+		if ( temp_right_tri_indices[i] != -1 ) {
+			right_tri_indices[right_index] = temp_right_tri_indices[i];
+			++right_index;
+		}
+	}
+
+	// Free temporary triangle indices buffers.
+	delete[] temp_left_tri_indices;
+	delete[] temp_right_tri_indices;
+
 	// Recurse.
-	node->left = constructTreeMedianVertexSplit( left_tris, left_bbox, curr_depth + 1 );
-	node->right = constructTreeMedianVertexSplit( right_tris, right_bbox, curr_depth + 1 );
+	node->left = constructTreeMedianSpaceSplit( left_tri_count, left_tri_indices, left_bbox, curr_depth + 1 );
+	node->right = constructTreeMedianSpaceSplit( right_tri_count, right_tri_indices, right_bbox, curr_depth + 1 );
 
 	return node;
 }
 
 
 ////////////////////////////////////////////////////
-// constructTreeMedianTriangleCentroidSplit().
+// Debug methods.
 ////////////////////////////////////////////////////
-KDTreeNode* KDTreeCPU::constructTreeMedianTriangleCentroidSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth )
+
+void KDTreeCPU::printNumTrianglesInEachNode( KDTreeNode *curr_node, int curr_depth )
 {
-	// Create new node.
-	KDTreeNode *node = new KDTreeNode();
-	node->tris = tri_list;
+	std::cout << "Level: " << curr_depth << ", Triangles: " << curr_node->num_tris << std::endl;
 
-	// Override passed-in bounding box and create "tightest-fitting" bounding box around passed-in list of triangles.
-	if ( USE_TIGHT_FITTING_BOUNDING_BOXES ) {
-		node->bbox = boundingBox( tri_list );
+	if ( curr_node->left ) {
+		printNumTrianglesInEachNode( curr_node->left, curr_depth + 1 );
 	}
-	else {
-		node->bbox = bounds;
+	if ( curr_node->right ) {
+		printNumTrianglesInEachNode( curr_node->right, curr_depth + 1 );
 	}
-
-	// Base case--Number of triangles in node is small enough.
-	if ( tri_list.size() <= NUM_TRIS_PER_NODE ) {
-		if ( curr_depth > max_num_levels ) {
-			max_num_levels = curr_depth;
-		}
-		return node;
-	}
-
-	// Get longest side of bounding box.
-	Axis longest_side = node->bbox.getLongestSide();
-
-	// Set split plane for node.
-	node->split_plane_axis = longest_side;
-
-	// Define "loose-fitting" bounding boxes.
-	boundingBox left_bbox = bounds;
-	boundingBox right_bbox = bounds;
-
-	// Sort list of vertices and compute "loose-fitting" bounding boxes.
-	if ( longest_side == XAXIS ) {
-		std::sort( tri_list.begin(), tri_list.end(), utilityCore::lessThanTriX() );
-		left_bbox.max.x = bounds.min.x + ( ( bounds.max.x - bounds.min.x ) / 2.0f );
-		right_bbox.min.x = bounds.min.x + ( ( bounds.max.x - bounds.min.x ) / 2.0f );
-	}
-	else if ( longest_side == YAXIS ) {
-		std::sort( tri_list.begin(), tri_list.end(), utilityCore::lessThanTriY() );
-		left_bbox.max.y = bounds.min.y + ( ( bounds.max.y - bounds.min.y ) / 2.0f );
-		right_bbox.min.y = bounds.min.y + ( ( bounds.max.y - bounds.min.y ) / 2.0f );
-	}
-	else {
-		std::sort( tri_list.begin(), tri_list.end(), utilityCore::lessThanTriZ() );
-		left_bbox.max.z = bounds.min.z + ( ( bounds.max.z - bounds.min.z ) / 2.0f );
-		right_bbox.min.z = bounds.min.z + ( ( bounds.max.z - bounds.min.z ) / 2.0f );
-	}
-
-	// Get median vetex value to split on.
-	int median_tri_index = tri_list.size() / 2;
-	glm::vec3 median_point = tri_list[median_tri_index]->center;
-
-	// Split list of triangles into left and right subtrees.
-	std::vector<Triangle*> left_tris;
-	std::vector<Triangle*> right_tris;
-	for ( int i = 0; i < tri_list.size(); ++i ) {
-		glm::vec3 tri_min = tri_list[i]->getMin();
-		glm::vec3 tri_max = tri_list[i]->getMax();
-
-		if ( longest_side == XAXIS ) {
-			if ( tri_min.x < median_point.x ) {
-				left_tris.push_back( tri_list[i] );
-			}
-			if ( tri_max.x >= median_point.x ) {
-				right_tris.push_back( tri_list[i] );
-			}
-		}
-		else if ( longest_side == YAXIS ) {
-			if ( tri_min.y < median_point.y ) {
-				left_tris.push_back( tri_list[i] );
-			}
-			if ( tri_max.y >= median_point.y ) {
-				right_tris.push_back( tri_list[i] );
-			}
-		}
-		else {
-			if ( tri_min.z < median_point.z ) {
-				left_tris.push_back( tri_list[i] );
-			}
-			if ( tri_max.z >= median_point.z ) {
-				right_tris.push_back( tri_list[i] );
-			}
-		}
-	}
-
-	// Recurse.
-	node->left = constructTreeMedianVertexSplit( left_tris, left_bbox, curr_depth + 1 );
-	node->right = constructTreeMedianVertexSplit( right_tris, right_bbox, curr_depth + 1 );
-
-	return node;
 }
 
 
-////////////////////////////////////////////////////
-// getVertListFromTriList().
-////////////////////////////////////////////////////
-std::vector<glm::vec3> KDTreeCPU::getVertListFromTriList( std::vector<Triangle*> tri_list ) const
-{
-	std::vector<glm::vec3> vert_list;
-	for ( int i = 0; i < tri_list.size(); ++i ) {
-		vert_list.push_back( tri_list[i]->v1 );
-		vert_list.push_back( tri_list[i]->v2 );
-		vert_list.push_back( tri_list[i]->v3 );
-	}
-
-	// Remove duplicates.
-	std::sort( vert_list.begin(), vert_list.end(), utilityCore::lessThanVec3X() );
-	vert_list.erase( std::unique( vert_list.begin(), vert_list.end() ), vert_list.end() );
-
-	return vert_list;
-}
 
 
-////////////////////////////////////////////////////
-// constructTreeMedianVertexSplit().
-////////////////////////////////////////////////////
-KDTreeNode* KDTreeCPU::constructTreeMedianVertexSplit( std::vector<Triangle*> tri_list, boundingBox bounds, int curr_depth )
-{
-	// Create new node.
-	KDTreeNode *node = new KDTreeNode();
-	node->tris = tri_list;
-
-	// Override passed-in bounding box and create "tightest-fitting" bounding box around passed-in list of triangles.
-	if ( USE_TIGHT_FITTING_BOUNDING_BOXES ) {
-		node->bbox = boundingBox( tri_list );
-	}
-	else {
-		node->bbox = bounds;
-	}
-
-	// Base case--Number of triangles in node is small enough.
-	if ( tri_list.size() <= NUM_TRIS_PER_NODE ) {
-		if ( curr_depth > max_num_levels ) {
-			max_num_levels = curr_depth;
-		}
-		return node;
-	}
-
-	// Create list of vertices from passed-in list of triangles.
-	std::vector<glm::vec3> vert_list = getVertListFromTriList( tri_list );
-
-	// Get longest side of bounding box.
-	Axis longest_side = node->bbox.getLongestSide();
-
-	// Set split plane for node.
-	node->split_plane_axis = longest_side;
-
-	// Define "loose-fitting" bounding boxes.
-	boundingBox left_bbox = bounds;
-	boundingBox right_bbox = bounds;
-
-	// Sort list of vertices and compute "loose-fitting" bounding boxes.
-	if ( longest_side == XAXIS ) {
-		std::sort( vert_list.begin(), vert_list.end(), utilityCore::lessThanVec3X() );
-		left_bbox.max.x = bounds.min.x + ( ( bounds.max.x - bounds.min.x ) / 2.0f );
-		right_bbox.min.x = bounds.min.x + ( ( bounds.max.x - bounds.min.x ) / 2.0f );
-	}
-	else if ( longest_side == YAXIS ) {
-		std::sort( vert_list.begin(), vert_list.end(), utilityCore::lessThanVec3Y() );
-		left_bbox.max.y = bounds.min.y + ( ( bounds.max.y - bounds.min.y ) / 2.0f );
-		right_bbox.min.y = bounds.min.y + ( ( bounds.max.y - bounds.min.y ) / 2.0f );
-	}
-	else {
-		std::sort( vert_list.begin(), vert_list.end(), utilityCore::lessThanVec3Z() );
-		left_bbox.max.z = bounds.min.z + ( ( bounds.max.z - bounds.min.z ) / 2.0f );
-		right_bbox.min.z = bounds.min.z + ( ( bounds.max.z - bounds.min.z ) / 2.0f );
-	}
-
-	// Get median vetex value to split on.
-	int median_vert_index = vert_list.size() / 2;
-	glm::vec3 median_vert = vert_list[median_vert_index];
-
-	// Split list of triangles into left and right subtrees.
-	std::vector<Triangle*> left_tris;
-	std::vector<Triangle*> right_tris;
-	for ( int i = 0; i < tri_list.size(); ++i ) {
-		glm::vec3 tri_min = tri_list[i]->getMin();
-		glm::vec3 tri_max = tri_list[i]->getMax();
-
-		if ( longest_side == XAXIS ) {
-			if ( tri_min.x < median_vert.x ) {
-				left_tris.push_back( tri_list[i] );
-			}
-			if ( tri_max.x >= median_vert.x ) {
-				right_tris.push_back( tri_list[i] );
-			}
-		}
-		else if ( longest_side == YAXIS ) {
-			if ( tri_min.y < median_vert.y ) {
-				left_tris.push_back( tri_list[i] );
-			}
-			if ( tri_max.y >= median_vert.y ) {
-				right_tris.push_back( tri_list[i] );
-			}
-		}
-		else {
-			if ( tri_min.z < median_vert.z ) {
-				left_tris.push_back( tri_list[i] );
-			}
-			if ( tri_max.z >= median_vert.z ) {
-				right_tris.push_back( tri_list[i] );
-			}
-		}
-	}
-
-	// Recurse.
-	node->left = constructTreeMedianVertexSplit( left_tris, left_bbox, curr_depth + 1 );
-	node->right = constructTreeMedianVertexSplit( right_tris, right_bbox, curr_depth + 1 );
-
-	return node;
-}
+//////////////////////////////////////////////////////
+//// intersect().
+//////////////////////////////////////////////////////
+//bool KDTreeCPU::intersect( KDTreeNode *node, glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 &hit_point, glm::vec3 &normal ) const
+//{
+//	//// Test for ray intersetion with current node bounding box.
+//	//bool intersects_node_bounding_box = Intersections::AABBIntersect( node->bbox, ray_o, ray_dir );
+//
+//	//if ( intersects_node_bounding_box ) {
+//	//	if ( node->left || node->right ) {
+//	//		bool hit_left = intersect( node->left, ray_o, ray_dir, hit_point, normal );
+//	//		bool hit_right = intersect( node->right, ray_o, ray_dir, hit_point, normal );
+//	//		return hit_left || hit_right;
+//	//	}
+//	//	else {
+//	//		// Leaf node.
+//	//		for ( int i = 0; i < node->tris.size(); ++i ) {
+//	//			// Test for ray intersection with current triangle in leaf node.
+//	//			Triangle *tri = node->tris[i];
+//	//			float t = -1.0f;
+//	//			bool intersects_tri = Intersections::TriIntersect( ray_o, ray_dir, tri->v1, tri->v2, tri->v3, t, normal );
+//
+//	//			if ( intersects_tri ) {
+//	//				hit_point = ray_o + ( t * ray_dir );
+//	//				return true;
+//	//			}
+//	//		}
+//	//	}
+//	//}
+//
+//	return false;
+//}

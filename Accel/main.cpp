@@ -307,8 +307,78 @@ void runTimingComparison(hash_grid& grid, float h){
 	}
 }
 
-int main(){
+int runKD(){
+	srand(time(NULL));
+	mesh* m = new mesh("meshes\\bunny_small_2.obj");
 
+	bool run = GL_TRUE;
+
+    if(!glfwInit())
+    {
+        exit(EXIT_FAILURE);
+    }
+
+    if(!glfwOpenWindow(static_cast<int>(windowWidth), static_cast<int>(windowHeight), 8, 8, 8, 8, 24, 0, GLFW_WINDOW))
+    {
+        glfwTerminate();
+        exit(EXIT_FAILURE);
+    }
+
+    glewInit();
+    if (!glewIsSupported( "GL_VERSION_2_0 " "GL_ARB_pixel_buffer_object")) {
+            fprintf( stderr, "ERROR: Support for necessary OpenGL extensions missing.");
+            fflush( stderr);
+            return false;
+    }
+
+    glfwSetKeyCallback(keypress);
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glViewport(0, 0, static_cast<GLsizei>(windowWidth), static_cast<GLsizei>(windowHeight));
+	glEnable( GL_POINT_SMOOTH );
+    glEnable( GL_BLEND );
+    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+    glPointSize( 6.0 );
+
+	aimCamera();
+
+	int frame=0;
+	float lastTime = glfwGetTime();
+	while(run){
+		frame+=1;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		GLenum errCode;
+		const GLubyte* errString;
+		if (errCode=glGetError() != GL_NO_ERROR){
+			glfwTerminate();
+			exit(1);
+		}
+
+		if (paused){
+			glfwSetWindowTitle("Paused");
+		}
+		else{
+			float now = glfwGetTime();
+			char fpsInfo[256];
+			sprintf(fpsInfo, "Accel Library Visual Testing | Framerate: %f", 1.0f / (now - lastTime));
+			lastTime = now;
+			glfwSetWindowTitle(fpsInfo);
+		}
+
+		glfwSwapBuffers();
+		run = !glfwGetKey(GLFW_KEY_ESC) && glfwGetWindowParam(GLFW_OPENED);
+	}
+
+	delete m;
+
+	glfwTerminate();
+    exit(EXIT_SUCCESS);
+}
+
+int runGrid(){
 	srand(time(NULL));
 
 	for (int i=0; i<10000; i+=1){
@@ -333,7 +403,6 @@ int main(){
 	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
 	grid.findNeighbors(250, h);
 	grid.findNeighbors(250, h, false);
-	//runTimingComparison(grid, h);
 
 	numIDs = grid.m_numParticles;
 
@@ -424,4 +493,10 @@ int main(){
 
 	glfwTerminate();
     exit(EXIT_SUCCESS);
+}
+
+int main(){
+
+	return runGrid();
+	
 }

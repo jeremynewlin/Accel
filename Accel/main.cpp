@@ -284,6 +284,29 @@ void drawKDTree( KDTreeNode *curr_node, int curr_depth, int max_num_levels )
 	}
 }
 
+void runTimingComparison(hash_grid& grid, float h){
+	int nums[6] = {10, 25, 50, 100, 250, 500};
+	for (int i=0; i<6; i+=1){
+		bool useGPU = true;
+		bool useGrid = true;
+
+		clock_t t = clock();
+		grid.findNeighbors(nums[i], h, useGrid, useGPU);
+		t = clock() - t;
+
+		cout<<"for "<<grid.m_maxNeighbors<<" neighbors, using ";
+		if (useGPU) cout<<"gpu ";
+		else cout<<"cpu ";
+
+		if (useGrid) cout<<"grid, ";
+		else cout<<"brute force, ";
+
+		cout<<"the nearest neighbor search took ";
+		cout<<((float)t)/CLOCKS_PER_SEC;
+		cout<<" seconds"<<endl;
+	}
+}
+
 int main(){
 
 	srand(time(NULL));
@@ -295,7 +318,7 @@ int main(){
 		colors.push_back(glm::vec3(x,y,z));
 	}
 
-	mesh* m = new mesh("meshes\\bunny_small.obj");
+	mesh* m = new mesh("meshes\\bunny_small_2.obj");
 
 	glm::vec3 gridSize = m->bb.max - m->bb.min;
 	gridSize = glm::vec3(1,1,1);
@@ -307,11 +330,10 @@ int main(){
 	gridSize.y = floor(gridSize.y)+1.0f;
 	gridSize.z = floor(gridSize.z)+1.0f;
 
-	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize, false);
-	grid.findNeighbors(50, h, true);
-
-	// Initialize kd-tree for mesh.
-	//KDTreeCPU kd_tree = KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
+	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
+	grid.findNeighbors(250, h);
+	grid.findNeighbors(250, h, false);
+	//runTimingComparison(grid, h);
 
 	numIDs = grid.m_numParticles;
 
@@ -375,13 +397,6 @@ int main(){
 		if (drawHashToggle) drawHashes(grid);
 		drawNeighbors(currentID, grid, false);
 		drawNeighbors(currentID, grid, true);
-
-		// Visualize kd-tree.
-		//drawMesh( m );
-		//drawKDTree( kd_tree.getRootNode(), 1, kd_tree.getMaxNumLevels() );
-
-		// DEBUG.
-		//std::cin.ignore();
 
 		GLenum errCode;
 		const GLubyte* errString;

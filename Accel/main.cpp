@@ -310,7 +310,10 @@ void runTimingComparison(hash_grid& grid, float h){
 
 int runKD(){
 	srand(time(NULL));
-	mesh* m = new mesh("meshes\\bunny_small_2.obj");
+
+	// Initialize kd-tree.
+	mesh* m = new mesh( "meshes\\bunny_small.obj" );
+	KDTreeCPU kd_tree = KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
 
 	bool run = GL_TRUE;
 
@@ -350,6 +353,10 @@ int runKD(){
 	while(run){
 		frame+=1;
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// Visualize kd-tree.
+		drawMesh( m );
+		drawKDTree( kd_tree.getRootNode(), 1, kd_tree.getNumLevels() );
 
 		GLenum errCode;
 		const GLubyte* errString;
@@ -500,6 +507,6 @@ int runGrid(){
 
 int main(){
 
-	return runGrid();
-	
+	//return runGrid();
+	return runKD();
 }

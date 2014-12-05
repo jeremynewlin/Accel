@@ -231,9 +231,7 @@ void resetNumNeighbors(int numParticles, int* numNeighbors){
 }
 
 
-hash_grid::hash_grid(int numParticles, glm::vec3* points, glm::vec3 gridSize, bool useGPU){
-
-	m_useGPU = useGPU;
+hash_grid::hash_grid(int numParticles, glm::vec3* points, glm::vec3 gridSize){
 
 	m_numParticles = numParticles;
 	m_points = new glm::vec3[m_numParticles];
@@ -274,7 +272,7 @@ hash_grid::hash_grid(int numParticles, glm::vec3* points, glm::vec3 gridSize, bo
 	m_maxNeighbors = -1;
 }
 
-void hash_grid::findNeighbors(int maxNeighbors, float h, bool useGrid){
+void hash_grid::findNeighbors(int maxNeighbors, float h, bool useGrid, bool useGPU){
 	if (maxNeighbors < 0){
 		return;
 	}
@@ -304,7 +302,7 @@ void hash_grid::findNeighbors(int maxNeighbors, float h, bool useGrid){
 	c_numNeighbors = NULL;
 	cudaMalloc((void**)&c_numNeighbors, m_numParticles*sizeof(int));
 
-	if (m_useGPU){
+	if (useGPU){
 		findNeighborsGPU(useGrid);
 	}
 	else{
@@ -328,7 +326,10 @@ void hash_grid::findNeighborsGPU(bool useGrid){
 
 	thrust::device_ptr<int> thrustCellIds = thrust::device_pointer_cast(c_cellIds);
 	thrust::device_ptr<int> thrustPIds = thrust::device_pointer_cast(c_pIds);
+	thrust::device_ptr<glm::vec3> thrustPos = thrust::device_pointer_cast(c_positions);
+
 	thrust::sort_by_key(thrustCellIds, thrustCellIds+m_numParticles, thrustPIds);
+	thrust::sort_by_key(thrustCellIds, thrustCellIds+m_numParticles, thrustPos);
 
 	resetGrid<<<fullBlocksPerGridGrid, threadsPerBlockGrid>>>
 		(int(m_gridSize.x*m_gridSize.y*m_gridSize.z), c_grid);
@@ -425,14 +426,14 @@ void hash_grid::findNeighborsCPU(bool useGrid){
 	}
 
 	if (useGrid){
-		findNeighborsUsingGridCPU();
+		findNeighborsCPUGridHelper();
 	}
 	else{
-		findNeighborsUsingBruteCPU();
+		findNeighborsCPUBruteHelper();
 	}
 }
 
-void hash_grid::findNeighborsUsingGridCPU(){
+void hash_grid::findNeighborsCPUGridHelper(){
 	
 	int numGridCells = int(m_gridSize.x * m_gridSize.y * m_gridSize.z);
 
@@ -562,7 +563,7 @@ void hash_grid::findNeighborsUsingGridCPU(){
 	}
 }
 
-void hash_grid::findNeighborsUsingBruteCPU(){
+void hash_grid::findNeighborsCPUBruteHelper(){
 	for (int i=0; i<m_numParticles; i+=1){
 		glm::vec3 point = m_points[i];
 		m_bruteNumNeighbors[i] = 0;

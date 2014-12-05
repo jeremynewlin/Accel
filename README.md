@@ -28,11 +28,11 @@ And now time for some performance evaluations.  First, we compared four differen
 
 First, here's a comparison of how particle number (and density) and neighbor amount affect performance.  Since that's a 3D data set, we got to make a 3D graph to show the results.  Videos can be found by clicking on the images below.
 
-[![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/reg.jpg)](https://www.youtube.com/watch?v=0zFS3fnT0FY&feature=youtu.be)
+[![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/reg.jpg)](https://www.youtube.com/watch?v=ay8P2ykL2Xk&feature=youtu.be)
 
 In the first video, you'll notice that the CPU brute force approach pops quite severely upwards as you increase both the neighbors and number of particles.  The other 3 stay much lower (you can't even see the GPU grid graph even).
 
-[![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/zoom.jpg)](https://www.youtube.com/watch?v=gPWu3BLeC0g&feature=youtu.be)
+[![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/zoom.jpg)](https://www.youtube.com/watch?v=HBxlWqiyqbc&feature=youtu.be)
 
 We zoom in on the data to look at the differences between the other 3.  You'll notice that zoomed in you can see that the CPU Grid and GPU Brute Force Approaches do in fact get larger, while the GPU Grid stays flatter.  Another interesting fact is that the CPU Grid sometimes outpaces the GPU Brute Force.
 

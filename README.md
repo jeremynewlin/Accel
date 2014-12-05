@@ -36,5 +36,35 @@ In the first video, you'll notice that the CPU brute force approach pops quite s
 
 We zoom in on the data to look at the differences between the other 3.  You'll notice that zoomed in you can see that the CPU Grid and GPU Brute Force Approaches do in fact get larger, while the GPU Grid stays flatter.  Another interesting fact is that the CPU Grid sometimes outpaces the GPU Brute Force.
 
+First, let's take a look at the two methods on the GPU - using the grid and brute forcing it.
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/gpu_comp.png)
+
+One interesting thing to note is that the the brute force stays relatively flat, while the grid is growing.  This could be a problem when the number of neighbors you need approaches the size of your data set, or if your data set is highly dense.  Our data set was relatively dense, and another important factor is sheer number of particles.  This was on the order of 10,000 particles, which really is not that much.  The brute force approach breaks down with many more particles (as seen in the videos above).
+
+One other important metric we wanted to compare is how much overhead the grid is costing us.  Clearly we're getting a net benefit from the grid structure, but we thought it would be interesting to quantify how much overhead we're paying for the speedup.
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/gpu_brute_breakdown.png)
+
+Clearly, in the brute force approach we're spending almost all of our time searching.  We don't need to set anything up (the memory management is done once, and thus is omitted from the comparison).
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/gpu_grid_breakdown.png)
+
+However, in the grid approach, we're spending a lot of time not searching.  But that's a good thing!  The entire point of this structure is to reduce the search time.  The main costs here are the sorting step, and then the grid search.  The purple "other" represents mostly error checking.
+
+Finally, we have to look at the memory overhead that comes with building this grid.  The cost of allocating the memory is amortized to 0, but we still need a sufficient amount of data to store the grid.  The extra amount of data is a function of the grid cell size, and will be discussed below.  The smaller the cell size, the greater the memory imprint.  Our grid is built around being unit sized, so your radius should be sufficiently small for most applications to prevent dampening or other loss of fine grained detail.
+
+At simulations with lower particle count on the order of 1000, the memory imprint is significant in terms of percentage at lower radii:
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/memory_small_mesh.png)
+
+However, it is important to note that this is still only on the order of 5 extra Mb in the worst case.
+
+With higher particles counts, the extra memory becomes insignificant:
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/memory_big_mesh.png)
+
+Overall, we're happy with grid - hopefully it will be of some use!
+
 KD Tree
 -----

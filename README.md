@@ -1,5 +1,6 @@
 Accel
 ===================
+[Jeremy Newlin](http://www.jeremynewlin.info/) and [Danny Rerucha](http://www.dannyrerucha.com/)
 
 This repository contains the functionality for two types of acceleration structures.  A uniform grid for accelerating nearest neighbor searches, and a KD Tree for accelerating ray tracking.  Both are run on the GPU using CUDA.  This project is a joint effort between Danny Rerucha and I for the GPU Programming Course at the University of Pennsylvania (CIS565).
 
@@ -23,6 +24,11 @@ So looking at Hash Cell 7 in the far right table, you can see that it has a valu
 Now, how does this help speed up nearest neighbor search?
 
 Remember that before we simply looped over the particles to find our neighbors.  We're basically going to do the same thing here, but we've drastically reduced the number of particles we have to check.  If you carefully choose the grid cell size to be the same as the radius of your search, you only have to check the surrounding grid cells for potential neighbors.  By design any particle not within those cells will not pass the check of being less than the radius away from the current particle.
+
+This image may be of use:
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/hash_view.png)
+
+This is a visualization of the hashing step described above.  Basically, particles in the same grid cell will be the same color in the image.  So, instead of searching through the entire point set for neighbors, you can just look in your cell (and those around yours).
 
 And now time for some performance evaluations.  First, we compared four different variations of the nearest neighbor search.  With/without the grid, and on the GPU/CPU.
 

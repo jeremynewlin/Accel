@@ -288,11 +288,11 @@ void runTimingComparison(hash_grid& grid, float h){
 	int nums[6] = {10, 25, 50, 100, 250, 500};
 	for (int i=0; i<6; i+=1){
 		bool useGPU = true;
-		bool useGrid = true;
+		bool useGrid = false;
 
 		clock_t t = clock();
 		//grid.findNeighbors(nums[i], h, useGrid, useGPU);
-		grid.findNeighbors(nums[i], h, useGrid);
+		grid.findNeighbors(nums[i], h, useGrid, useGPU);
 		t = clock() - t;
 
 		cout<<"for "<<grid.m_maxNeighbors<<" neighbors, using ";
@@ -389,7 +389,7 @@ int runGrid(){
 		colors.push_back(glm::vec3(x,y,z));
 	}
 
-	mesh* m = new mesh("meshes\\bunny_small_2.obj");
+	mesh* m = new mesh("meshes\\bunny_small_4.obj");
 
 	glm::vec3 gridSize = m->bb.max - m->bb.min;
 	gridSize = glm::vec3(1,1,1);
@@ -402,7 +402,10 @@ int runGrid(){
 	gridSize.z = floor(gridSize.z)+1.0f;
 
 	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
-	grid.findNeighbors(250, h, false);
+	runTimingComparison(grid, h);
+	//grid.findNeighbors(250, h, true, true);
+	//grid.findNeighbors(250, h, false, true);
+	//grid.findNeighbors(250, h, true, true);
 
 	numIDs = grid.m_numParticles;
 
@@ -461,11 +464,11 @@ int runGrid(){
 		//	cout<<"average from grid       : "<<avgDist/grid.m_gridNumNeighbors[currentID]<<endl<<endl;
 		//	printDistances = false;
 		//}
-		//if (drawGridToggle) drawGrid(grid.m_gridSize, h, glm::vec3()/*-(m->bb.max-m->bb.min)/2.0f*/);
-		//drawMeshAsPoints(m);
-		//if (drawHashToggle) drawHashes(grid);
-		//drawNeighbors(currentID, grid, false);
-		//drawNeighbors(currentID, grid, true);
+		if (drawGridToggle) drawGrid(grid.m_gridSize, h, glm::vec3()/*-(m->bb.max-m->bb.min)/2.0f*/);
+		drawMeshAsPoints(m);
+		if (drawHashToggle) drawHashes(grid);
+		drawNeighbors(currentID, grid, false);
+		drawNeighbors(currentID, grid, true);
 
 		GLenum errCode;
 		const GLubyte* errString;

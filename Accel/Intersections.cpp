@@ -20,7 +20,7 @@ Intersections::~Intersections()
 // Implementation inspired by zacharmarz.
 // https://gamedev.stackexchange.com/questions/18436/most-efficient-aabb-vs-ray-collision-algorithms
 ////////////////////////////////////////////////////
-bool Intersections::AABBIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 ray_dir )
+bool Intersections::aabbIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 ray_dir )
 {
 	glm::vec3 dirfrac( 1.0f / ray_dir.x, 1.0f / ray_dir.y, 1.0f / ray_dir.z );
 
@@ -34,7 +34,7 @@ bool Intersections::AABBIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 
 	float tmin = std::max( std::max( std::min( t1, t2 ), std::min( t3, t4 ) ), std::min( t5, t6 ) );
 	float tmax = std::min( std::min( std::max( t1, t2 ), std::max( t3, t4 ) ), std::max( t5, t6 ) );
 
-	// If tmax < 0, ray intersects AABB, but entire AABB is behing ray, so reject.
+	// If tmax < 0, ray intersects AABB, but entire AABB is behind ray, so reject.
 	if ( tmax < 0.0f ) {
 		return false;
 	}
@@ -53,7 +53,7 @@ bool Intersections::AABBIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 
 // Implementation inspired by Tomas Moller: http://www.graphics.cornell.edu/pubs/1997/MT97.pdf
 // Additional algorithm details: http://www.lighthouse3d.com/tutorials/maths/ray-triangle-intersection/
 ////////////////////////////////////////////////////
-bool Intersections::TriIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, float &t, glm::vec3 &normal )
+bool Intersections::triIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, float &t, glm::vec3 &normal )
 {
 	glm::vec3 e1, e2, h, s, q;
 	float a, f, u, v;

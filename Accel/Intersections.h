@@ -20,8 +20,8 @@ public:
 	Intersections( void );
 	~Intersections( void );
 
-	static bool AABBIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 ray_dir );
-	static bool TriIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, float &t, glm::vec3 &normal );
+	static bool aabbIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 ray_dir );
+	static bool triIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, float &t, glm::vec3 &normal );
 
 	static glm::vec3 computeTriNormal( const glm::vec3&, const glm::vec3&, const glm::vec3& );
 };

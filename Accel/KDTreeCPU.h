@@ -62,6 +62,9 @@ public:
 	KDTreeCPU( int num_tris, glm::vec3 *tris, int num_verts, glm::vec3 *verts );
 	~KDTreeCPU( void );
 
+	// Public traversal method that begins recursive search.
+	bool intersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t, glm::vec3 &hit_point, glm::vec3 &normal ) const;
+
 	// kd-tree getters.
 	KDTreeNode* getRootNode( void ) const;
 	int getNumLevels( void ) const;
@@ -79,11 +82,10 @@ private:
 	int num_verts, num_tris;
 	glm::vec3 *verts, *tris;
 
-	// TODO: Consider precomputing min and max values for all triangles.
-	
 	KDTreeNode* constructTreeMedianSpaceSplit( int num_tris, int *tri_indices, boundingBox bounds, int curr_depth );
 
-	//bool intersect( KDTreeNode *node, glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 &hit_point, glm::vec3 &normal ) const;
+	// Private recursive traversal method.
+	bool intersect( KDTreeNode *curr_node, const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t, glm::vec3 &normal ) const;
 
 	// Bounding box getters.
 	int getLongestBoundingBoxSide( glm::vec3 min, glm::vec3 max );

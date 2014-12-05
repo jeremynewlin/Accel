@@ -30,6 +30,8 @@ This image may be of use:
 
 This is a visualization of the hashing step described above.  Basically, particles in the same grid cell will be the same color in the image.  So, instead of searching through the entire point set for neighbors, you can just look in your cell (and those around yours).
 
+###Performance
+
 And now time for some performance evaluations.  First, we compared four different variations of the nearest neighbor search.  With/without the grid, and on the GPU/CPU.
 
 First, here's a comparison of how particle number (and density) and neighbor amount affect performance.  Since that's a 3D data set, we got to make a 3D graph to show the results.  Videos can be found by clicking on the images below.

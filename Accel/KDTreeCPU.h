@@ -11,10 +11,6 @@
 // Constants.
 ////////////////////////////////////////////////////
 
-//#define XAXIS 0
-//#define YAXIS 1
-//#define ZAXIS 2
-
 const int NUM_TRIS_PER_NODE = 20;
 const bool USE_TIGHT_FITTING_BOUNDING_BOXES = false;
 const float INFINITY = std::numeric_limits<float>::max();
@@ -57,7 +53,7 @@ private:
 	bool singleRayStacklessIntersect( KDTreeNode *curr_node, const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t_entry, float &t_exit, glm::vec3 &normal ) const;
 
 	// Bounding box getters.
-	int getLongestBoundingBoxSide( glm::vec3 min, glm::vec3 max );
+	SplitAxis getLongestBoundingBoxSide( glm::vec3 min, glm::vec3 max );
 	boundingBox computeTightFittingBoundingBox( int num_verts, glm::vec3 *verts );
 	boundingBox computeTightFittingBoundingBox( int num_tris, int *tri_indices );
 

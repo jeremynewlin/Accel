@@ -64,7 +64,7 @@ int KDTreeCPU::getNumLeaves( void ) const
 	return num_leaves;
 }
 
-int KDTreeCPU::getLongestBoundingBoxSide( glm::vec3 min, glm::vec3 max )
+SplitAxis KDTreeCPU::getLongestBoundingBoxSide( glm::vec3 min, glm::vec3 max )
 {
 	// max > min is guaranteed.
 	float xlength = max.x - min.x;
@@ -191,6 +191,8 @@ KDTreeNode* KDTreeCPU::constructTreeMedianSpaceSplit( int num_tris, int *tri_ind
 
 	// Base case--Number of triangles in node is small enough.
 	if ( num_tris <= NUM_TRIS_PER_NODE ) {
+		node->is_leaf_node = true;
+
 		// Update number of tree levels.
 		if ( curr_depth > num_levels ) {
 			num_levels = curr_depth;
@@ -202,7 +204,8 @@ KDTreeNode* KDTreeCPU::constructTreeMedianSpaceSplit( int num_tris, int *tri_ind
 	}
 
 	// Get longest side of bounding box.
-	int longest_side = getLongestBoundingBoxSide( bounds.min, bounds.max );
+	SplitAxis longest_side = getLongestBoundingBoxSide( bounds.min, bounds.max );
+	node->split_plane_axis = longest_side;
 
 	// Compute median value for longest side as well as "loose-fitting" bounding boxes.
 	float median_val = 0.0;
@@ -223,6 +226,8 @@ KDTreeNode* KDTreeCPU::constructTreeMedianSpaceSplit( int num_tris, int *tri_ind
 		left_bbox.max.z = median_val;
 		right_bbox.min.z = median_val;
 	}
+
+	node->split_plane_value = median_val;
 
 	// Allocate and initialize memory for temporary buffers to hold triangle indices for left and right subtrees.
 	int *temp_left_tri_indices = new int[num_tris];

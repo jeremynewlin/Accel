@@ -60,20 +60,16 @@ bool Intersections::triIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 
 	glm::vec3 e1, e2, h, s, q;
 	float a, f, u, v;
 
-	// Find vectors for two edges sharing v0.
 	e1 = v1 - v0;
 	e2 = v2 - v0;
 
-	// Compute determinant.
 	h = glm::cross( ray_dir, e2 );
 	a = glm::dot( e1, h );
 
-	// If determinant is 0, then ray lies in plane of triangle.
-	if ( a > -INTERSECTION_EPSILON && a < INTERSECTION_EPSILON ) {
+	if ( a > -0.00001f && a < 0.00001f ) {
 		return false;
 	}
 
-	// Compute u parameter and test bounds.
 	f = 1.0f / a;
 	s = ray_o - v0;
 	u = f * glm::dot( s, h );
@@ -82,7 +78,6 @@ bool Intersections::triIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 
 		return false;
 	}
 
-	// Compute v parameter and test bounds.
 	q = glm::cross( s, e1 );
 	v = f * glm::dot( ray_dir, q );
 
@@ -90,16 +85,14 @@ bool Intersections::triIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 
 		return false;
 	}
 
-	// Compute t to find out where the intersection point lies on the line.
+	// at this stage we can compute t to find out where the intersection point is on the line
 	t = f * glm::dot( e2, q );
 
-	// There is a ray intersection.
-	if ( t > INTERSECTION_EPSILON ) {
+	if ( t > 0.00001f ) { // ray intersection
 		normal = Intersections::computeTriNormal( v0, v1, v2 );
 		return true;
 	}
-	// There is a line intersection, but not a ray intersection.
-	else {
+	else { // this means that there is a line intersection but not a ray intersection
 		return false;
 	}
 }
@@ -110,8 +103,8 @@ bool Intersections::triIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 
 ////////////////////////////////////////////////////
 glm::vec3 Intersections::computeTriNormal( const glm::vec3 &p1, const glm::vec3 &p2, const glm::vec3 &p3 )
 {
-	glm::vec3 u = p2 - p3;
-	glm::vec3 v = p1 - p3;
+	glm::vec3 u = p2 - p1;
+	glm::vec3 v = p3 - p1;
 
 	float nx = u.y * v.z - u.z * v.y;
 	float ny = u.z * v.x - u.x * v.z;

@@ -59,6 +59,9 @@ public:
 
 	bool isPointToLeftOfSplittingPlane( const glm::vec3 &p ) const;
 	KDTreeNode* getNeighboringNode( glm::vec3 p );
+
+	// Rope construction.
+	void optimizeRopes( void );
 };
 
 #endif

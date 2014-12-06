@@ -22,7 +22,7 @@ int windowHeight = 750;
 glm::vec3 upperBound = glm::vec3(1,1,1);
 glm::vec3 lowerBound = glm::vec3(0,0,0);
 
-glm::vec3 cameraPos(0.5,0.5,2);
+glm::vec3 cameraPos(0.5,0.5,20);
 glm::vec3 cameraTar(0.5,0.5,0);
 
 glm::vec3 cameraUp(0,1,0);
@@ -397,112 +397,28 @@ glm::vec3 kdTreeMeshStacklessTraversal( const KDTreeCPU *kd_tree, const Ray &ray
 ////////////////////////////////////////////////////
 int runKD()
 {
-	//srand(time(NULL));
+	srand(time(NULL));
 
-	//// Initialize kd-tree.
-	//mesh* m = new mesh( "meshes\\bunny_small.obj" );
-	//KDTreeCPU kd_tree = KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
+	// Initialize kd-tree.
+	//mesh* m = new mesh( "meshes\\bunny_low_poly_0.obj" );
+	mesh* m = new mesh( "meshes\\bunny.obj" );
+	KDTreeCPU * kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
 
-	//bool run = GL_TRUE;
-
- //   if(!glfwInit())
- //   {
- //       exit(EXIT_FAILURE);
- //   }
-
- //   if(!glfwOpenWindow(static_cast<int>(windowWidth), static_cast<int>(windowHeight), 8, 8, 8, 8, 24, 0, GLFW_WINDOW))
- //   {
- //       glfwTerminate();
- //       exit(EXIT_FAILURE);
- //   }
-
- //   glewInit();
- //   if (!glewIsSupported( "GL_VERSION_2_0 " "GL_ARB_pixel_buffer_object")) {
- //           fprintf( stderr, "ERROR: Support for necessary OpenGL extensions missing.");
- //           fflush( stderr);
- //           return false;
- //   }
-
- //   glfwSetKeyCallback(keypress);
-
-	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
- //   glEnable(GL_DEPTH_TEST);
- //   glDepthFunc(GL_LEQUAL);
- //   glViewport(0, 0, static_cast<GLsizei>(windowWidth), static_cast<GLsizei>(windowHeight));
-	//glEnable( GL_POINT_SMOOTH );
- //   glEnable( GL_BLEND );
- //   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
- //   glPointSize( 6.0 );
-
-	//aimCamera();
-
-	//int frame=0;
-	//float lastTime = glfwGetTime();
-	//while(run){
-	//	frame+=1;
-	//	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	//	// Visualize kd-tree.
-	//	drawMesh( m );
-	//	drawKDTree( kd_tree.getRootNode(), 1, kd_tree.getNumLevels() );
-
-	//	GLenum errCode;
-	//	const GLubyte* errString;
-	//	if (errCode=glGetError() != GL_NO_ERROR){
-	//		glfwTerminate();
-	//		exit(1);
-	//	}
-
-	//	if (paused){
-	//		glfwSetWindowTitle("Paused");
-	//	}
-	//	else{
-	//		float now = glfwGetTime();
-	//		char fpsInfo[256];
-	//		sprintf(fpsInfo, "Accel Library Visual Testing | Framerate: %f", 1.0f / (now - lastTime));
-	//		lastTime = now;
-	//		glfwSetWindowTitle(fpsInfo);
-	//	}
-
-	//	glfwSwapBuffers();
-	//	run = !glfwGetKey(GLFW_KEY_ESC) && glfwGetWindowParam(GLFW_OPENED);
-	//}
-
-	//delete m;
-
-	//glfwTerminate();
- //   exit(EXIT_SUCCESS);
-
-
-	const std::string OUTPUT_IMG_PATH = "C:\\Users\\Danny\\Documents\\_projects\\cis565\\Accel\\ray_casting_output\\new.bmp";
-	//const std::string INPUT_MESH_PATH = "meshes\\bunny.obj";
-
-	// Camera settings.
+	const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
+	//// Camera settings.
 	float fovy = 45.0f;
-	glm::vec2 reso( 640.0f, 480.0f );
-	glm::vec3 eyep( 0.0f, 0.0f, 5.0f );
+	glm::vec2 reso( 256, 256 );
+	glm::vec3 eyep( 0.5f, 0.5f, 10.0f );
 	glm::vec3 vdir( 0.0f, 0.0f, -1.0f );
 	//glm::vec3 vdir = glm::normalize( glm::vec3( 0.0f, 0.0f, 0.0f ) - eyep );
 	glm::vec3 uvec( 0.0f, 1.0f, 0.0f );
 	Camera *camera = new Camera( fovy, reso, eyep, vdir, uvec );
 
-	// Initialize output BMP image.
+	// initialize output bmp image.
 	BMP output_img;
 	output_img.SetSize( ( int )reso.x, ( int )reso.y );
 	output_img.SetBitDepth( 24 );
 
-	// DEBUG.
-	std::cout << "Started reading in mesh." << std::endl;
-
-	// Read in mesh.
-	//mesh *m = new mesh( INPUT_MESH_PATH );
-	mesh *m = new mesh( "meshes\\bunny.obj" );
-
-	// Construct kd-tree.
-	KDTreeCPU *kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
-
-	// DEBUG.
-	std::cout << "Finished reading in mesh." << std::endl;
 	int lines_since_last_output = 0;
 	int lines_between_outputs = 10;
 
@@ -511,11 +427,11 @@ int runKD()
 		for ( int x = 0; x < reso.x; ++x ) {
 			Ray ray = camera->computeRayThroughPixel( x, y );
 
-			//glm::vec3 pixel_color = bruteForceMeshTraversal( m, ray );
-			//glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
+			////glm::vec3 pixel_color = bruteForceMeshTraversal( m, ray );
+			////glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
 			glm::vec3 pixel_color = kdTreeMeshStacklessTraversal( kd_tree, ray );
 
-			// Write pixel.
+			//// Write pixel.
 			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
 			output_img( x, y )->Green = ( ebmpBYTE )( pixel_color.y * 255.0f );
 			output_img( x, y )->Blue = ( ebmpBYTE )( pixel_color.z * 255.0f );
@@ -532,10 +448,141 @@ int runKD()
 	// Write output image at path specified above with name specified in scene config file.
 	output_img.WriteToFile( OUTPUT_IMG_PATH.c_str() );
 
+	bool run = GL_TRUE;
+
+    if(!glfwInit())
+    {
+        exit(EXIT_FAILURE);
+    }
+
+    if(!glfwOpenWindow(static_cast<int>(windowWidth), static_cast<int>(windowHeight), 8, 8, 8, 8, 24, 0, GLFW_WINDOW))
+    {
+        glfwTerminate();
+        exit(EXIT_FAILURE);
+    }
+
+    glewInit();
+    if (!glewIsSupported( "GL_VERSION_2_0 " "GL_ARB_pixel_buffer_object")) {
+            fprintf( stderr, "ERROR: Support for necessary OpenGL extensions missing.");
+            fflush( stderr);
+            return false;
+    }
+
+    glfwSetKeyCallback(keypress);
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glViewport(0, 0, static_cast<GLsizei>(windowWidth), static_cast<GLsizei>(windowHeight));
+	glEnable( GL_POINT_SMOOTH );
+    glEnable( GL_BLEND );
+    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+    glPointSize( 6.0 );
+
+	aimCamera();
+
+	int frame=0;
+	float lastTime = glfwGetTime();
+	while(run){
+		frame+=1;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// Visualize kd-tree.
+		drawMesh( m );
+		drawKDTree( kd_tree->getRootNode(), 1, kd_tree->getNumLevels() );
+
+		GLenum errCode;
+		const GLubyte* errString;
+		if (errCode=glGetError() != GL_NO_ERROR){
+			glfwTerminate();
+			exit(1);
+		}
+
+		if (paused){
+			glfwSetWindowTitle("Paused");
+		}
+		else{
+			float now = glfwGetTime();
+			char fpsInfo[256];
+			sprintf(fpsInfo, "Accel Library Visual Testing | Framerate: %f", 1.0f / (now - lastTime));
+			lastTime = now;
+			glfwSetWindowTitle(fpsInfo);
+		}
+
+		glfwSwapBuffers();
+		run = !glfwGetKey(GLFW_KEY_ESC) && glfwGetWindowParam(GLFW_OPENED);
+	}
+
 	delete camera;
 	delete m;
 	delete kd_tree;
-	return 0;
+
+	glfwTerminate();
+    exit(EXIT_SUCCESS);
+
+
+	//const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
+	////const std::string INPUT_MESH_PATH = "meshes\\bunny.obj";
+
+	//// Camera settings.
+	//float fovy = 45.0f;
+	//glm::vec2 reso( 256, 256 );
+	//glm::vec3 eyep( 0.0f, 0.0f, 5.0f );
+	//glm::vec3 vdir( 0.0f, 0.0f, -1.0f );
+	////glm::vec3 vdir = glm::normalize( glm::vec3( 0.0f, 0.0f, 0.0f ) - eyep );
+	//glm::vec3 uvec( 0.0f, 1.0f, 0.0f );
+	//Camera *camera = new Camera( fovy, reso, eyep, vdir, uvec );
+
+	//// Initialize output BMP image.
+	//BMP output_img;
+	//output_img.SetSize( ( int )reso.x, ( int )reso.y );
+	//output_img.SetBitDepth( 24 );
+
+	//// DEBUG.
+	//std::cout << "Started reading in mesh." << std::endl;
+
+	//// Read in mesh.
+	////mesh *m = new mesh( INPUT_MESH_PATH );
+	//mesh *m = new mesh( "meshes\\bunny.obj" );
+
+	//// Construct kd-tree.
+	//KDTreeCPU *kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
+
+	//// DEBUG.
+	//std::cout << "Finished reading in mesh." << std::endl;
+	//int lines_since_last_output = 0;
+	//int lines_between_outputs = 10;
+
+	//// Iterate through all pixels.
+	//for ( int y = 0; y < reso.y; ++y ) {
+	//	for ( int x = 0; x < reso.x; ++x ) {
+	//		Ray ray = camera->computeRayThroughPixel( x, y );
+
+	//		//glm::vec3 pixel_color = bruteForceMeshTraversal( m, ray );
+	//		//glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
+	//		glm::vec3 pixel_color = kdTreeMeshStacklessTraversal( kd_tree, ray );
+
+	//		// Write pixel.
+	//		output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
+	//		output_img( x, y )->Green = ( ebmpBYTE )( pixel_color.y * 255.0f );
+	//		output_img( x, y )->Blue = ( ebmpBYTE )( pixel_color.z * 255.0f );
+	//	}
+
+	//	// DEBUG.
+	//	++lines_since_last_output;
+	//	if ( lines_since_last_output == lines_between_outputs ) {
+	//		lines_since_last_output = 0;
+	//		std::cout << "Rendered " << y + 1 << " lines." << std::endl;
+	//	}
+	//}
+
+	//// Write output image at path specified above with name specified in scene config file.
+	//output_img.WriteToFile( OUTPUT_IMG_PATH.c_str() );
+
+	//delete camera;
+	//delete m;
+	//delete kd_tree;
+	//return 0;
 }
 
 int runGrid(){

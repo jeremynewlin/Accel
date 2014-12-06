@@ -11,7 +11,9 @@
 // Constants.
 ////////////////////////////////////////////////////
 
-const int NUM_TRIS_PER_NODE = 20;
+const int tris = 4968;
+const int den = 4;
+const int NUM_TRIS_PER_NODE = 20;//tris/den + 1;///den+1 < 20 ? 20 : tris/den+1;
 const bool USE_TIGHT_FITTING_BOUNDING_BOXES = false;
 const float INFINITY = std::numeric_limits<float>::max();
 
@@ -40,7 +42,7 @@ public:
 private:
 	// kd-tree variables.
 	KDTreeNode *root;
-	int num_levels, num_leaves;
+	int num_levels, num_leaves, num_nodes;
 
 	// Input mesh variables.
 	int num_verts, num_tris;

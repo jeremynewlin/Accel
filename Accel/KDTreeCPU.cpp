@@ -13,6 +13,7 @@ KDTreeCPU::KDTreeCPU( int num_tris, glm::vec3 *tris, int num_verts, glm::vec3 *v
 	// Set class-level variables.
 	num_levels = 0;
 	num_leaves = 0;
+	num_nodes = 0;
 	this->num_verts = num_verts;
 	this->verts = verts;
 	this->num_tris = num_tris;
@@ -184,6 +185,8 @@ KDTreeNode* KDTreeCPU::constructTreeMedianSpaceSplit( int num_tris, int *tri_ind
 	KDTreeNode *node = new KDTreeNode();
 	node->num_tris = num_tris;
 	node->tri_indices = tri_indices;
+	node->id = num_nodes;
+	++num_nodes;
 
 	// Override passed-in bounding box and create "tightest-fitting" bounding box around passed-in list of triangles.
 	if ( USE_TIGHT_FITTING_BOUNDING_BOXES ) {
@@ -399,6 +402,8 @@ bool KDTreeCPU::singleRayStacklessIntersect( KDTreeNode *curr_node, const glm::v
 	bool intersection_detected = false;
 
 	while ( t_entry < t_exit ) {
+		if (glm::abs(t_entry - t_exit) < 1e-6){
+		}
 		// Down traversal - Working our way down to a leaf node.
 		glm::vec3 p_entry = ray_o + ( t_entry * ray_dir );
 		while ( !curr_node->is_leaf_node ) {
@@ -426,6 +431,10 @@ bool KDTreeCPU::singleRayStacklessIntersect( KDTreeNode *curr_node, const glm::v
 				}
 			}
 		}
+
+		//if (intersection_detected){
+		//	break;
+		//}
 
 		// Compute distance along ray to exit current node.
 		float tmp_t_near, tmp_t_far;
@@ -462,9 +471,33 @@ void KDTreeCPU::buildRopeStructure( KDTreeNode *curr_node, KDTreeNode *ropes[], 
 {
 	// Base case.
 	if ( curr_node->is_leaf_node ) {
+		//std::cout<<curr_node->id<<": "<<std::endl;
 		for ( int i = 0; i < 6; ++i ) {
 			curr_node->ropes[i] = ropes[i];
+			//if (i==0){
+			//	std::cout<<"LEFT: ";
+			//}
+			//else if (i==1){
+			//	std::cout<<"FRONT: ";
+			//}
+			//else if (i==2){
+			//	std::cout<<"RIGHT: ";
+			//}
+			//else if (i==3){
+			//	std::cout<<"BACK: ";
+			//}
+			//else if (i==4){
+			//	std::cout<<"TOP: ";
+			//}
+			//else if (i==5){
+			//	std::cout<<"BOTTOM: ";
+			//}
+			//if (ropes[i]!=0){
+			//	std::cout<<ropes[i]->id;
+			//}
+			//std::cout<<std::endl;
 		}
+		//std::cout<<std::endl;
 	}
 	else {
 		// Only optimize ropes on single ray case.

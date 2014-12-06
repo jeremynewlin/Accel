@@ -1,4 +1,5 @@
 #include "KDTreeStructs.h"
+#include <iostream>
 
 
 ////////////////////////////////////////////////////
@@ -42,6 +43,8 @@ bool KDTreeNode::isPointToLeftOfSplittingPlane( const glm::vec3 &p ) const
 	}
 	// Something went wrong because split_plane_axis is not set to one of the three allowed values.
 	else {
+		std::cout << "ERROR: split_plane_axis not set to valid value." << std::endl;
+		std::cin.ignore();
 		return false;
 	}
 }
@@ -74,144 +77,8 @@ KDTreeNode* KDTreeNode::getNeighboringNode( glm::vec3 p )
 	}
 	// p should be a point on one of the faces of this node's bounding box, but in this case, it isn't.
 	else {
+		std::cout << "ERROR: Node neighbor could not be returned." << std::endl;
+		std::cin.ignore();
 		return NULL;
-	}
-}
-
-void KDTreeNode::optimizeRopes()
-{
-	// Loop through ropes of all faces of node bounding box.
-	for ( int i = 0; i < 6; ++i ) {
-		KDTreeNode *rope_node = ropes[i];
-
-		// Process until leaf node is reached.
-		// The optimization - We try to push the ropes down into the tree as far as possible
-		// instead of just having the ropes point to the roots of neighboring subtrees.
-		while ( !rope_node->is_leaf_node ) {
-
-			// Case I.
-
-			if ( i == LEFT || i == RIGHT ) {
-
-				// Case I-A.
-
-				// Handle parallel split plane case.
-				if ( rope_node->split_plane_axis == X_AXIS ) {
-					rope_node = ( i == LEFT ) ? rope_node->right : rope_node->left;
-				}
-
-				// Case I-B.
-
-				else if ( rope_node->split_plane_axis == Y_AXIS ) {
-					if ( rope_node->split_plane_value < ( bbox.min.y + KD_TREE_EPSILON ) ) {
-						rope_node = rope_node->right;
-					}
-					else if ( rope_node->split_plane_value > ( bbox.max.y + KD_TREE_EPSILON ) ) {
-						rope_node = rope_node->left;
-					}
-					else {
-						break;
-					}
-				}
-
-				// Case I-C.
-
-				// Split plane is Z_AXIS.
-				else {
-					if ( rope_node->split_plane_value < ( bbox.min.z + KD_TREE_EPSILON ) ) {
-						rope_node = rope_node->right;
-					}
-					else if ( rope_node->split_plane_value > ( bbox.max.z + KD_TREE_EPSILON ) ) {
-						rope_node = rope_node->left;
-					}
-					else {
-						break;
-					}
-				}
-			}
-
-			// Case II.
-
-			else if ( i == FRONT || i == BACK ) {
-
-				// Case II-A.
-
-				// Handle parallel split plane case.
-				if ( rope_node->split_plane_axis == Z_AXIS ) {
-					rope_node = ( i == BACK ) ? rope_node->right : rope_node->left;
-				}
-
-				// Case II-B.
-
-				else if ( rope_node->split_plane_axis == X_AXIS ) {
-					if ( rope_node->split_plane_value < ( bbox.min.x + KD_TREE_EPSILON ) ) {
-						rope_node = rope_node->right;
-					}
-					else if ( rope_node->split_plane_value > ( bbox.max.x + KD_TREE_EPSILON ) ) {
-						rope_node = rope_node->left;
-					}
-					else {
-						break;
-					}
-				}
-
-				// Case II-C.
-
-				// Split plane is Y_AXIS.
-				else {
-					if ( rope_node->split_plane_value < ( bbox.min.y + KD_TREE_EPSILON ) ) {
-						rope_node = rope_node->right;
-					}
-					else if ( rope_node->split_plane_value > ( bbox.max.y + KD_TREE_EPSILON ) ) {
-						rope_node = rope_node->left;
-					}
-					else {
-						break;
-					}
-				}
-			}
-
-			// Case III.
-
-			// TOP and BOTTOM.
-			else {
-
-				// Case III-A.
-
-				// Handle parallel split plane case.
-				if ( rope_node->split_plane_axis == Y_AXIS ) {
-					rope_node = ( i == BOTTOM ) ? rope_node->right : rope_node->left;
-				}
-
-				// Case III-B.
-
-				else if ( rope_node->split_plane_axis == Z_AXIS ) {
-					if ( rope_node->split_plane_value < ( bbox.min.z + KD_TREE_EPSILON ) ) {
-						rope_node = rope_node->right;
-					}
-					else if ( rope_node->split_plane_value > ( bbox.max.z + KD_TREE_EPSILON ) ) {
-						rope_node = rope_node->left;
-					}
-					else {
-						break;
-					}
-				}
-
-				// Case III-C.
-
-				// Split plane is X_AXIS.
-				else {
-					if ( rope_node->split_plane_value < ( bbox.min.x + KD_TREE_EPSILON ) ) {
-						rope_node = rope_node->right;
-					}
-					else if ( rope_node->split_plane_value > ( bbox.max.x + KD_TREE_EPSILON ) ) {
-						rope_node = rope_node->left;
-					}
-					else {
-						break;
-					}
-				}
-			}
-		}
 	}
 }

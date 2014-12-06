@@ -29,6 +29,10 @@ KDTreeCPU::KDTreeCPU( int num_tris, glm::vec3 *tris, int num_verts, glm::vec3 *v
 
 	// Build kd-tree and set root node.
 	root = constructTreeMedianSpaceSplit( num_tris, tri_indices, bbox, 1 );
+
+    // build rope structure
+    KDTreeNode* ropes[6] = { NULL };
+    buildRopeStructure( root, ropes, false );
 }
 
 KDTreeCPU::~KDTreeCPU()
@@ -389,7 +393,7 @@ bool KDTreeCPU::singleRayStacklessIntersect( const glm::vec3 &ray_o, const glm::
 	}
 }
 
-// Private recursive call.
+// Private method that does the heavy lifting.
 bool KDTreeCPU::singleRayStacklessIntersect( KDTreeNode *curr_node, const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t_entry, float &t_exit, glm::vec3 &normal ) const
 {
 	bool intersection_detected = false;
@@ -415,8 +419,8 @@ bool KDTreeCPU::singleRayStacklessIntersect( KDTreeNode *curr_node, const glm::v
 			bool intersects_tri = Intersections::triIntersect( ray_o, ray_dir, v0, v1, v2, tmp_t, tmp_normal );
 
 			if ( intersects_tri ) {
-				intersection_detected = true;
 				if ( tmp_t < t_exit ) {
+					intersection_detected = true;
 					t_exit = tmp_t;
 					normal = tmp_normal;
 				}
@@ -447,6 +451,204 @@ bool KDTreeCPU::singleRayStacklessIntersect( KDTreeNode *curr_node, const glm::v
 	}
 
 	return intersection_detected;
+}
+
+
+////////////////////////////////////////////////////
+// Connect kd-tree nodes with ropes.
+// Tree construction post-process.
+////////////////////////////////////////////////////
+void KDTreeCPU::buildRopeStructure( KDTreeNode *curr_node, KDTreeNode *ropes[], bool is_single_ray_case )
+{
+	// Base case.
+	if ( curr_node->is_leaf_node ) {
+		for ( int i = 0; i < 6; ++i ) {
+			curr_node->ropes[i] = ropes[i];
+		}
+	}
+	else {
+		// Only optimize ropes on single ray case.
+		// It is not optimal to optimize on packet traversal case.
+		if ( is_single_ray_case ) {
+			optimizeRopes( ropes, curr_node->bbox );
+		}
+
+		AABBFace SL, SR;
+		if ( curr_node->split_plane_axis == X_AXIS ) {
+			SL = LEFT;
+			SR = RIGHT;
+		}
+		else if ( curr_node->split_plane_axis == Y_AXIS ) {
+			SL = BOTTOM;
+			SR = TOP;
+		}
+		// Split plane is Z_AXIS.
+		else {
+			SL = BACK;
+			SR = FRONT;
+		}
+
+		KDTreeNode* RS_left[6];
+		KDTreeNode* RS_right[6];
+        for ( int i = 0; i < 6; ++i ) {
+            RS_left[i] = ropes[i];
+			RS_right[i] = ropes[i];
+        }
+
+		// Recurse.
+		RS_left[SR] = curr_node->right;
+        buildRopeStructure( curr_node->left, RS_left, is_single_ray_case );
+
+        // Recurse.
+		RS_right[SL] = curr_node->left;
+        buildRopeStructure( curr_node->right, RS_right, is_single_ray_case );
+	}
+}
+
+
+////////////////////////////////////////////////////
+// Optimization step called in certain cases when constructing stackless kd-tree rope structure.
+////////////////////////////////////////////////////
+void KDTreeCPU::optimizeRopes( KDTreeNode *ropes[], boundingBox bbox )
+{
+	// Loop through ropes of all faces of node bounding box.
+	for ( int i = 0; i < 6; ++i ) {
+		KDTreeNode *rope_node = ropes[i];
+
+		if ( rope_node == NULL ) {
+			continue;
+		}
+
+		// Process until leaf node is reached.
+		// The optimization - We try to push the ropes down into the tree as far as possible
+		// instead of just having the ropes point to the roots of neighboring subtrees.
+		while ( !rope_node->is_leaf_node ) {
+
+			// Case I.
+
+			if ( i == LEFT || i == RIGHT ) {
+
+				// Case I-A.
+
+				// Handle parallel split plane case.
+				if ( rope_node->split_plane_axis == X_AXIS ) {
+					rope_node = ( i == LEFT ) ? rope_node->right : rope_node->left;
+				}
+
+				// Case I-B.
+
+				else if ( rope_node->split_plane_axis == Y_AXIS ) {
+					if ( rope_node->split_plane_value < ( bbox.min.y - KD_TREE_EPSILON ) ) {
+						rope_node = rope_node->right;
+					}
+					else if ( rope_node->split_plane_value > ( bbox.max.y + KD_TREE_EPSILON ) ) {
+						rope_node = rope_node->left;
+					}
+					else {
+						break;
+					}
+				}
+
+				// Case I-C.
+
+				// Split plane is Z_AXIS.
+				else {
+					if ( rope_node->split_plane_value < ( bbox.min.z - KD_TREE_EPSILON ) ) {
+						rope_node = rope_node->right;
+					}
+					else if ( rope_node->split_plane_value > ( bbox.max.z + KD_TREE_EPSILON ) ) {
+						rope_node = rope_node->left;
+					}
+					else {
+						break;
+					}
+				}
+			}
+
+			// Case II.
+
+			else if ( i == FRONT || i == BACK ) {
+
+				// Case II-A.
+
+				// Handle parallel split plane case.
+				if ( rope_node->split_plane_axis == Z_AXIS ) {
+					rope_node = ( i == BACK ) ? rope_node->right : rope_node->left;
+				}
+
+				// Case II-B.
+
+				else if ( rope_node->split_plane_axis == X_AXIS ) {
+					if ( rope_node->split_plane_value < ( bbox.min.x - KD_TREE_EPSILON ) ) {
+						rope_node = rope_node->right;
+					}
+					else if ( rope_node->split_plane_value > ( bbox.max.x + KD_TREE_EPSILON ) ) {
+						rope_node = rope_node->left;
+					}
+					else {
+						break;
+					}
+				}
+
+				// Case II-C.
+
+				// Split plane is Y_AXIS.
+				else {
+					if ( rope_node->split_plane_value < ( bbox.min.y - KD_TREE_EPSILON ) ) {
+						rope_node = rope_node->right;
+					}
+					else if ( rope_node->split_plane_value > ( bbox.max.y + KD_TREE_EPSILON ) ) {
+						rope_node = rope_node->left;
+					}
+					else {
+						break;
+					}
+				}
+			}
+
+			// Case III.
+
+			// TOP and BOTTOM.
+			else {
+
+				// Case III-A.
+
+				// Handle parallel split plane case.
+				if ( rope_node->split_plane_axis == Y_AXIS ) {
+					rope_node = ( i == BOTTOM ) ? rope_node->right : rope_node->left;
+				}
+
+				// Case III-B.
+
+				else if ( rope_node->split_plane_axis == Z_AXIS ) {
+					if ( rope_node->split_plane_value < ( bbox.min.z - KD_TREE_EPSILON ) ) {
+						rope_node = rope_node->right;
+					}
+					else if ( rope_node->split_plane_value > ( bbox.max.z + KD_TREE_EPSILON ) ) {
+						rope_node = rope_node->left;
+					}
+					else {
+						break;
+					}
+				}
+
+				// Case III-C.
+
+				// Split plane is X_AXIS.
+				else {
+					if ( rope_node->split_plane_value < ( bbox.min.x - KD_TREE_EPSILON ) ) {
+						rope_node = rope_node->right;
+					}
+					else if ( rope_node->split_plane_value > ( bbox.max.x + KD_TREE_EPSILON ) ) {
+						rope_node = rope_node->left;
+					}
+					else {
+						break;
+					}
+				}
+			}
+		}
+	}
 }
 
 

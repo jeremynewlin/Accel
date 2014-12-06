@@ -373,6 +373,26 @@ glm::vec3 kdTreeMeshTraversal( const KDTreeCPU *kd_tree, const Ray &ray )
 
 
 ////////////////////////////////////////////////////
+// Test for ray/obj intersection using stackless kd-tree traversal.
+////////////////////////////////////////////////////
+glm::vec3 kdTreeMeshStacklessTraversal( const KDTreeCPU *kd_tree, const Ray &ray )
+{
+	glm::vec3 pixel_color( 0.0f, 0.0f, 0.0f );
+
+	float t;
+	glm::vec3 hit_point, normal;
+	bool intersects = kd_tree->singleRayStacklessIntersect( ray.origin, ray.dir, t, hit_point, normal );
+
+	if ( intersects ) {
+		pixel_color = utilityCore::absoluteValueOfVec3( normal );
+		//pixel_color = glm::vec3( 1.0f, 1.0f, 1.0f );
+	}
+
+	return pixel_color;
+}
+
+
+////////////////////////////////////////////////////
 // Wrapper method for kd-tree testing.
 ////////////////////////////////////////////////////
 int runKD()
@@ -492,8 +512,8 @@ int runKD()
 			Ray ray = camera->computeRayThroughPixel( x, y );
 
 			//glm::vec3 pixel_color = bruteForceMeshTraversal( m, ray );
-			glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
-			//glm::vec3 pixel_color = kdTreeMeshStacklessTraversal( kd_tree, ray );
+			//glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
+			glm::vec3 pixel_color = kdTreeMeshStacklessTraversal( kd_tree, ray );
 
 			// Write pixel.
 			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );

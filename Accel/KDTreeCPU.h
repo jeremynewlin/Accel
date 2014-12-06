@@ -4,53 +4,16 @@
 #include "boundingBox.h"
 #include "utils.h"
 #include <limits>
+#include "KDTreeStructs.h"
 
 
 ////////////////////////////////////////////////////
 // Constants.
 ////////////////////////////////////////////////////
 
-#define XAXIS 0
-#define YAXIS 1
-#define ZAXIS 2
-
 const int NUM_TRIS_PER_NODE = 20;
 const bool USE_TIGHT_FITTING_BOUNDING_BOXES = false;
 const float INFINITY = std::numeric_limits<float>::max();
-
-
-////////////////////////////////////////////////////
-// KDTreeNode.
-////////////////////////////////////////////////////
-class KDTreeNode
-{
-public:
-	KDTreeNode( void )
-	{
-		left = NULL;
-		right = NULL;
-	}
-
-	~KDTreeNode( void )
-	{
-		if ( num_tris > 0 ) {
-			delete[] tri_indices;
-		}
-
-		if ( left ) {
-			delete left;
-		}
-		if ( right ) {
-			delete right;
-		}
-	}
-
-	boundingBox bbox;
-	KDTreeNode *left;
-	KDTreeNode *right;
-	int num_tris;
-	int *tri_indices;
-};
 
 
 ////////////////////////////////////////////////////
@@ -64,6 +27,7 @@ public:
 
 	// Public traversal method that begins recursive search.
 	bool intersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t, glm::vec3 &hit_point, glm::vec3 &normal ) const;
+	bool singleRayStacklessIntersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t, glm::vec3 &hit_point, glm::vec3 &normal ) const;
 
 	// kd-tree getters.
 	KDTreeNode* getRootNode( void ) const;
@@ -86,15 +50,20 @@ private:
 
 	// Private recursive traversal method.
 	bool intersect( KDTreeNode *curr_node, const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t, glm::vec3 &normal ) const;
+	bool singleRayStacklessIntersect( KDTreeNode *curr_node, const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t_entry, float &t_exit, glm::vec3 &normal ) const;
+
+	// Rope construction.
+	void buildRopeStructure( KDTreeNode *curr_node, KDTreeNode *ropes[], bool is_single_ray_case=false );
+	void optimizeRopes( KDTreeNode *ropes[], boundingBox bbox );
 
 	// Bounding box getters.
-	int getLongestBoundingBoxSide( glm::vec3 min, glm::vec3 max );
+	SplitAxis getLongestBoundingBoxSide( glm::vec3 min, glm::vec3 max );
 	boundingBox computeTightFittingBoundingBox( int num_verts, glm::vec3 *verts );
 	boundingBox computeTightFittingBoundingBox( int num_tris, int *tri_indices );
 
 	// Triangle getters.
-	float getMinTriValue( int tri_index, int axis );
-	float getMaxTriValue( int tri_index, int axis );
+	float getMinTriValue( int tri_index, SplitAxis axis );
+	float getMaxTriValue( int tri_index, SplitAxis axis );
 };
 
 #endif

@@ -38,6 +38,9 @@ namespace utilityCore {
     extern std::string convertIntToString(int number);
     extern std::istream& safeGetline(std::istream& is, std::string& t); //Thanks to http://stackoverflow.com/a/6089413
 
+	extern float degreesToRadians( float degrees );
+	extern glm::vec3 absoluteValueOfVec3( const glm::vec3 &v );
+
     //-----------------------------
     //-------GLM Printers----------
     //-----------------------------

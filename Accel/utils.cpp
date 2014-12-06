@@ -134,6 +134,30 @@ std::istream& utilityCore::safeGetline(std::istream& is, std::string& t)
         }
     }
 }
+
+
+////////////////////////////////////////////////////
+// degreesToRadians().
+////////////////////////////////////////////////////
+float utilityCore::degreesToRadians( float degrees )
+{
+	return degrees * ( PI / 180.0f );
+}
+
+
+////////////////////////////////////////////////////
+// absoluteValueOfVec3().
+////////////////////////////////////////////////////
+glm::vec3 utilityCore::absoluteValueOfVec3( const glm::vec3 &v )
+{
+	glm::vec3 n;
+	n.x = ( v.x < 0.0f ) ? ( v.x * -1.0f ) : v.x;
+	n.y = ( v.y < 0.0f ) ? ( v.y * -1.0f ) : v.y;
+	n.z = ( v.z < 0.0f ) ? ( v.z * -1.0f ) : v.z;
+	return n;
+}
+
+
 //-----------------------------
 //-------GLM Printers----------
 //-----------------------------

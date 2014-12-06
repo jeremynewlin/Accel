@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef KD_TREE_STRUCTS_H
 #define KD_TREE_STRUCTS_H
 
@@ -30,6 +28,17 @@ enum AABBFace {
 	BACK = 3,
 	TOP = 4,
 	BOTTOM = 5
+};
+
+
+////////////////////////////////////////////////////
+// structs.
+////////////////////////////////////////////////////
+
+struct Ray
+{
+	glm::vec3 origin;
+	glm::vec3 dir;
 };
 
 

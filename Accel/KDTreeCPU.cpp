@@ -295,8 +295,10 @@ KDTreeNode* KDTreeCPU::constructTreeMedianSpaceSplit( int num_tris, int *tri_ind
 
 
 ////////////////////////////////////////////////////
-// Public kd-tree traversal method to test for intersections with passed-in ray.
+// Recursive (needs a stack) kd-tree traversal method to test for intersections with passed-in ray.
 ////////////////////////////////////////////////////
+
+// Public-facing wrapper method.
 bool KDTreeCPU::intersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t, glm::vec3 &hit_point, glm::vec3 &normal ) const
 {
 	t = INFINITY;
@@ -307,10 +309,7 @@ bool KDTreeCPU::intersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir, flo
 	return hit;
 }
 
-
-////////////////////////////////////////////////////
-// Recursive kd-tree traversal method to test for intersections with passed-in ray.
-////////////////////////////////////////////////////
+// Private recursive call.
 bool KDTreeCPU::intersect( KDTreeNode *curr_node, const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t, glm::vec3 &normal ) const
 {
 	// Perform ray/AABB intersection test.
@@ -358,6 +357,91 @@ bool KDTreeCPU::intersect( KDTreeNode *curr_node, const glm::vec3 &ray_o, const 
 	}
 
 	return false;
+}
+
+
+////////////////////////////////////////////////////
+// Single ray stackless kd-tree traversal method to test for intersections with passed-in ray.
+////////////////////////////////////////////////////
+
+// Public-facing wrapper method.
+bool KDTreeCPU::singleRayStacklessIntersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t, glm::vec3 &hit_point, glm::vec3 &normal ) const
+{
+	// Perform ray/AABB intersection test.
+	float t_near, t_far;
+	bool intersects_root_node_bounding_box = Intersections::aabbIntersect( root->bbox, ray_o, ray_dir, t_near, t_far );
+
+	if ( intersects_root_node_bounding_box ) {
+		bool hit = singleRayStacklessIntersect( root, ray_o, ray_dir, t_near, t_far, normal );
+		if ( hit ) {
+			t = t_far;
+			hit_point = ray_o + ( t * ray_dir );
+		}
+		return hit;
+	}
+	else {
+		return false;
+	}
+}
+
+// Private recursive call.
+bool KDTreeCPU::singleRayStacklessIntersect( KDTreeNode *curr_node, const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t_entry, float &t_exit, glm::vec3 &normal ) const
+{
+	bool intersection_detected = false;
+
+	while ( t_entry < t_exit ) {
+		// Down traversal - Working our way down to a leaf node.
+		glm::vec3 p_entry = ray_o + ( t_entry * ray_dir );
+		while ( !curr_node->is_leaf_node ) {
+			curr_node = curr_node->isPointToLeftOfSplittingPlane( p_entry ) ? curr_node->left : curr_node->right;
+		}
+
+		// We've reached a leaf node.
+		// Check intersection with triangles contained in current leaf node.
+		for ( int i = 0; i < curr_node->num_tris; ++i ) {
+			glm::vec3 tri = tris[curr_node->tri_indices[i]];
+			glm::vec3 v0 = verts[( int )tri[0]];
+			glm::vec3 v1 = verts[( int )tri[1]];
+			glm::vec3 v2 = verts[( int )tri[2]];
+
+			// Perform ray/triangle intersection test.
+			float tmp_t = INFINITY;
+			glm::vec3 tmp_normal( 0.0f, 0.0f, 0.0f );
+			bool intersects_tri = Intersections::triIntersect( ray_o, ray_dir, v0, v1, v2, tmp_t, tmp_normal );
+
+			if ( intersects_tri ) {
+				intersection_detected = true;
+				if ( tmp_t < t_exit ) {
+					t_exit = tmp_t;
+					normal = tmp_normal;
+				}
+			}
+		}
+
+		// Compute distance along ray to exit current node.
+		float tmp_t_near, tmp_t_far;
+		bool intersects_curr_node_bounding_box = Intersections::aabbIntersect( curr_node->bbox, ray_o, ray_dir, tmp_t_near, tmp_t_far );
+		if ( intersects_curr_node_bounding_box ) {
+			// Set t_entry to be the entrance point of the next (neighboring) node.
+			t_entry = tmp_t_far;
+		}
+		else {
+			// This should never happen.
+			// If it does, then that means we're checking triangles in a node that the ray never intersects.
+			break;
+		}
+
+		// Get neighboring node using ropes attached to current node.
+		glm::vec3 p_exit = ray_o + ( t_entry * ray_dir );
+		curr_node = curr_node->getNeighboringNode( p_exit );
+
+		// Break if neighboring node not found, meaning we've exited the kd-tree.
+		if ( curr_node == NULL ) {
+			break;
+		}
+	}
+
+	return intersection_detected;
 }
 
 

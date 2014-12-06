@@ -7,12 +7,6 @@
 
 const float INTERSECTION_EPSILON = pow( 1.0f, -5 );
 
-enum AABBDir {
-	RIGHT = 0,
-	LEFT = 1,
-	MIDDLE = 2
-};
-
 
 class Intersections
 {

@@ -4,53 +4,20 @@
 #include "boundingBox.h"
 #include "utils.h"
 #include <limits>
+#include "KDTreeStructs.h"
 
 
 ////////////////////////////////////////////////////
 // Constants.
 ////////////////////////////////////////////////////
 
-#define XAXIS 0
-#define YAXIS 1
-#define ZAXIS 2
+//#define XAXIS 0
+//#define YAXIS 1
+//#define ZAXIS 2
 
 const int NUM_TRIS_PER_NODE = 20;
 const bool USE_TIGHT_FITTING_BOUNDING_BOXES = false;
 const float INFINITY = std::numeric_limits<float>::max();
-
-
-////////////////////////////////////////////////////
-// KDTreeNode.
-////////////////////////////////////////////////////
-class KDTreeNode
-{
-public:
-	KDTreeNode( void )
-	{
-		left = NULL;
-		right = NULL;
-	}
-
-	~KDTreeNode( void )
-	{
-		if ( num_tris > 0 ) {
-			delete[] tri_indices;
-		}
-
-		if ( left ) {
-			delete left;
-		}
-		if ( right ) {
-			delete right;
-		}
-	}
-
-	boundingBox bbox;
-	KDTreeNode *left;
-	KDTreeNode *right;
-	int num_tris;
-	int *tri_indices;
-};
 
 
 ////////////////////////////////////////////////////
@@ -93,8 +60,8 @@ private:
 	boundingBox computeTightFittingBoundingBox( int num_tris, int *tri_indices );
 
 	// Triangle getters.
-	float getMinTriValue( int tri_index, int axis );
-	float getMaxTriValue( int tri_index, int axis );
+	float getMinTriValue( int tri_index, SplitAxis axis );
+	float getMaxTriValue( int tri_index, SplitAxis axis );
 };
 
 #endif

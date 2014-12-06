@@ -70,20 +70,20 @@ int KDTreeCPU::getLongestBoundingBoxSide( glm::vec3 min, glm::vec3 max )
 	float xlength = max.x - min.x;
 	float ylength = max.y - min.y;
 	float zlength = max.z - min.z;
-	return ( xlength > ylength && xlength > zlength ) ? XAXIS : ( ylength > zlength ? YAXIS : ZAXIS );
+	return ( xlength > ylength && xlength > zlength ) ? X_AXIS : ( ylength > zlength ? Y_AXIS : Z_AXIS );
 }
 
-float KDTreeCPU::getMinTriValue( int tri_index, int axis )
+float KDTreeCPU::getMinTriValue( int tri_index, SplitAxis axis )
 {
 	glm::vec3 tri = tris[tri_index];
 	glm::vec3 v0 = verts[( int )tri[0]];
 	glm::vec3 v1 = verts[( int )tri[1]];
 	glm::vec3 v2 = verts[( int )tri[2]];
 
-	if ( axis == XAXIS ) {
+	if ( axis == X_AXIS ) {
 		return ( v0.x < v1.x && v0.x < v2.x ) ? v0.x : ( v1.x < v2.x ? v1.x : v2.x );
 	}
-	else if ( axis == YAXIS ) {
+	else if ( axis == Y_AXIS ) {
 		return ( v0.y < v1.y && v0.y < v2.y ) ? v0.y : ( v1.y < v2.y ? v1.y : v2.y );
 	}
 	else {
@@ -91,17 +91,17 @@ float KDTreeCPU::getMinTriValue( int tri_index, int axis )
 	}
 }
 
-float KDTreeCPU::getMaxTriValue( int tri_index, int axis )
+float KDTreeCPU::getMaxTriValue( int tri_index, SplitAxis axis )
 {
 	glm::vec3 tri = tris[tri_index];
 	glm::vec3 v0 = verts[( int )tri[0]];
 	glm::vec3 v1 = verts[( int )tri[1]];
 	glm::vec3 v2 = verts[( int )tri[2]];
 
-	if ( axis == XAXIS ) {
+	if ( axis == X_AXIS ) {
 		return ( v0.x > v1.x && v0.x > v2.x ) ? v0.x : ( v1.x > v2.x ? v1.x : v2.x );
 	}
-	else if ( axis == YAXIS ) {
+	else if ( axis == Y_AXIS ) {
 		return ( v0.y > v1.y && v0.y > v2.y ) ? v0.y : ( v1.y > v2.y ? v1.y : v2.y );
 	}
 	else {
@@ -208,12 +208,12 @@ KDTreeNode* KDTreeCPU::constructTreeMedianSpaceSplit( int num_tris, int *tri_ind
 	float median_val = 0.0;
 	boundingBox left_bbox = bounds;
 	boundingBox right_bbox = bounds;
-	if ( longest_side == XAXIS ) {
+	if ( longest_side == X_AXIS ) {
 		median_val = bounds.min.x + ( ( bounds.max.x - bounds.min.x ) / 2.0f );
 		left_bbox.max.x = median_val;
 		right_bbox.min.x = median_val;
 	}
-	else if ( longest_side == YAXIS ) {
+	else if ( longest_side == Y_AXIS ) {
 		median_val = bounds.min.y + ( ( bounds.max.y - bounds.min.y ) / 2.0f );
 		left_bbox.max.y = median_val;
 		right_bbox.min.y = median_val;
@@ -233,17 +233,17 @@ KDTreeNode* KDTreeCPU::constructTreeMedianSpaceSplit( int num_tris, int *tri_ind
 	float min_tri_val, max_tri_val;
 	for ( int i = 0; i < num_tris; ++i ) {
 		// Get min and max triangle values along desired axis.
-		if ( longest_side == XAXIS ) {
-			min_tri_val = getMinTriValue( tri_indices[i], XAXIS );
-			max_tri_val = getMaxTriValue( tri_indices[i], XAXIS );
+		if ( longest_side == X_AXIS ) {
+			min_tri_val = getMinTriValue( tri_indices[i], X_AXIS );
+			max_tri_val = getMaxTriValue( tri_indices[i], X_AXIS );
 		}
-		else if ( longest_side == YAXIS ) {
-			min_tri_val = getMinTriValue( tri_indices[i], YAXIS );
-			max_tri_val = getMaxTriValue( tri_indices[i], YAXIS );
+		else if ( longest_side == Y_AXIS ) {
+			min_tri_val = getMinTriValue( tri_indices[i], Y_AXIS );
+			max_tri_val = getMaxTriValue( tri_indices[i], Y_AXIS );
 		}
 		else {
-			min_tri_val = getMinTriValue( tri_indices[i], ZAXIS );
-			max_tri_val = getMaxTriValue( tri_indices[i], ZAXIS );
+			min_tri_val = getMinTriValue( tri_indices[i], Z_AXIS );
+			max_tri_val = getMaxTriValue( tri_indices[i], Z_AXIS );
 		}
 
 		// Update temp_left_tri_indices.

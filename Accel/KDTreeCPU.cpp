@@ -314,7 +314,8 @@ bool KDTreeCPU::intersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir, flo
 bool KDTreeCPU::intersect( KDTreeNode *curr_node, const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t, glm::vec3 &normal ) const
 {
 	// Perform ray/AABB intersection test.
-	bool intersects_aabb = Intersections::aabbIntersect( curr_node->bbox, ray_o, ray_dir );
+	float t_near, t_far;
+	bool intersects_aabb = Intersections::aabbIntersect( curr_node->bbox, ray_o, ray_dir, t_near, t_far );
 
 	if ( intersects_aabb ) {
 		// If current node is a leaf node.

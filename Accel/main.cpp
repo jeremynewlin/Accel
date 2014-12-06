@@ -389,6 +389,8 @@ int runKD(){
 int runGrid(){
 	srand(time(NULL));
 
+	
+
 	for (int i=0; i<10000; i+=1){
 		float x = float(rand())/float(RAND_MAX);
 		float y = float(rand())/float(RAND_MAX);
@@ -396,17 +398,24 @@ int runGrid(){
 		colors.push_back(glm::vec3(x,y,z));
 	}
 
-	mesh* m = new mesh("meshes\\bunny_small_4.obj");
+	mesh* m = new mesh("meshes\\bunny_small_1.obj");
 
 	glm::vec3 gridSize = m->bb.max - m->bb.min;
 	gridSize = glm::vec3(1,1,1);
-	float h = 0.05f;
+	
+	
+	float h = 0.01f;
+
 
 	gridSize /= h;
 
 	gridSize.x = floor(gridSize.x)+1.0f;
 	gridSize.y = floor(gridSize.y)+1.0f;
 	gridSize.z = floor(gridSize.z)+1.0f;
+
+	
+	cout<<(gridSize.x*gridSize.x*gridSize.x)*sizeof(int)<<endl;
+	cout<<sizeof(int)<<endl;
 
 	hash_grid grid = hash_grid(m->numVerts, m->verts, gridSize);
 	runTimingComparison(grid, h);

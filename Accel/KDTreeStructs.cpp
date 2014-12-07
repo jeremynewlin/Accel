@@ -83,6 +83,68 @@ KDTreeNode* KDTreeNode::getNeighboringNode( glm::vec3 p )
 	}
 }
 
+void KDTreeNode::prettyPrint()
+{
+	std::cout << "id: " << id << std::endl;
+	std::cout << "bounding box min: ( " << bbox.min.x << ", " << bbox.min.y << ", " << bbox.min.z << " )" << std::endl;
+	std::cout << "bounding box max: ( " << bbox.max.x << ", " << bbox.max.y << ", " << bbox.max.z << " )" << std::endl;
+	std::cout << "num_tris: " << num_tris << std::endl;
+
+	// Print triangle indices.
+	int num_tris_to_print = ( num_tris > 10 ) ? 10 : num_tris;
+	for ( int i = 0; i < num_tris_to_print; ++i ) {
+		std::cout << "tri index " << i << ": " << tri_indices[i] << std::endl;
+	}
+
+	// Print split plane axis.
+	if ( split_plane_axis == X_AXIS ) {
+		std::cout << "split plane axis: X_AXIS" << std::endl;
+	}
+	else if ( split_plane_axis == Y_AXIS ) {
+		std::cout << "split plane axis: Y_AXIS" << std::endl;
+	}
+	else if ( split_plane_axis == Z_AXIS ) {
+		std::cout << "split plane axis: Z_AXIS" << std::endl;
+	}
+	else {
+		std::cout << "split plane axis: invalid" << std::endl;
+	}
+
+	std::cout << "split plane value: " << split_plane_value << std::endl;
+
+	// Print whether or not node is a leaf node.
+	if ( is_leaf_node ) {
+		std::cout << "is leaf node: YES" << std::endl;
+	}
+	else {
+		std::cout << "is leaf node: NO" << std::endl;
+	}
+
+	// Print pointers to children.
+	if ( left ) {
+		std::cout << "left child: " << left << std::endl;
+	}
+	else {
+		std::cout << "left child: NULL" << std::endl;
+	}
+	if ( right ) {
+		std::cout << "right child: " << right << std::endl;
+	}
+	else {
+		std::cout << "right child: NULL" << std::endl;
+	}
+
+	// Print neighboring nodes.
+	for ( int i = 0; i < 6; ++i ) {
+		if ( ropes[i] ) {
+			std::cout << "rope " << i << ": " << ropes[i] << std::endl;
+		}
+		else {
+			std::cout << "rope " << i << ": NULL" << std::endl;
+		}
+	}
+}
+
 
 ////////////////////////////////////////////////////
 // KDTreeNodeGPU.
@@ -97,5 +159,43 @@ KDTreeNodeGPU::KDTreeNodeGPU()
 
 	for ( int i = 0; i < 6; ++i ) {
 		neighbor_node_indices[i] = -1;
+	}
+}
+
+void KDTreeNodeGPU::prettyPrint()
+{
+	std::cout << "bounding box min: ( " << bbox.min.x << ", " << bbox.min.y << ", " << bbox.min.z << " )" << std::endl;
+	std::cout << "bounding box max: ( " << bbox.max.x << ", " << bbox.max.y << ", " << bbox.max.z << " )" << std::endl;
+	std::cout << "num_tris: " << num_tris << std::endl;
+	std::cout << "first_tri_index: " << first_tri_index << std::endl;
+
+	// Print split plane axis.
+	if ( split_plane_axis == X_AXIS ) {
+		std::cout << "split plane axis: X_AXIS" << std::endl;
+	}
+	else if ( split_plane_axis == Y_AXIS ) {
+		std::cout << "split plane axis: Y_AXIS" << std::endl;
+	}
+	else if ( split_plane_axis == Z_AXIS ) {
+		std::cout << "split plane axis: Z_AXIS" << std::endl;
+	}
+	else {
+		std::cout << "split plane axis: invalid" << std::endl;
+	}
+
+	std::cout << "split plane value: " << split_plane_value << std::endl;
+
+	// Print children indices.
+	std::cout << "left child index: " << left_child_index << std::endl;
+	std::cout << "right child index: " << right_child_index << std::endl;
+
+	// Print neighboring nodes.
+	for ( int i = 0; i < 6; ++i ) {
+		if ( neighbor_node_indices[i] ) {
+			std::cout << "neighbor node index " << i << ": " << neighbor_node_indices[i] << std::endl;
+		}
+		else {
+			std::cout << "neighbor node index " << i << ": NULL" << std::endl;
+		}
 	}
 }

@@ -66,10 +66,13 @@ public:
 	// One rope for each face of the AABB encompassing the triangles in a node.
 	KDTreeNode *ropes[6];
 
+	int id;
+
 	bool isPointToLeftOfSplittingPlane( const glm::vec3 &p ) const;
 	KDTreeNode* getNeighboringNode( glm::vec3 p );
 
-	int id;
+	// Debug method.
+	void prettyPrint( void );
 };
 
 class KDTreeNodeGPU
@@ -87,6 +90,9 @@ public:
 
 	SplitAxis split_plane_axis;
 	float split_plane_value;
+
+	// Debug method.
+	void prettyPrint( void );
 };
 
 #endif

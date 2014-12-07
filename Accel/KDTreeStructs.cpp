@@ -78,7 +78,7 @@ KDTreeNode* KDTreeNode::getNeighboringNode( glm::vec3 p )
 	// p should be a point on one of the faces of this node's bounding box, but in this case, it isn't.
 	else {
 		std::cout << "ERROR: Node neighbor could not be returned." << std::endl;
-		std::cin.ignore();
+		//std::cin.ignore();
 		return NULL;
 	}
 }

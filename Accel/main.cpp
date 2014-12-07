@@ -396,11 +396,6 @@ int runKD()
 	mesh *m = new mesh( "meshes\\bunny.obj" );
 	KDTreeCPU *kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
 
-	// DEBUG.
-	//kd_tree->printNodeIdsAndBounds( kd_tree->getRootNode() );
-	//std::cout << kd_tree->getNumNodes() << std::endl;
-	//std::cin.ignore();
-
 	const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
 
 	// Camera settings.

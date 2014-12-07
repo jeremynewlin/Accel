@@ -90,5 +90,12 @@ KDTreeNode* KDTreeNode::getNeighboringNode( glm::vec3 p )
 
 KDTreeNodeGPU::KDTreeNodeGPU()
 {
-	// TODO.
+	left_child_index = -1;
+	right_child_index = -1;
+	first_tri_index = -1;
+	num_tris = 0;
+
+	for ( int i = 0; i < 6; ++i ) {
+		neighbor_node_indices[i] = -1;
+	}
 }

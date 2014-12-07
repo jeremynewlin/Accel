@@ -74,15 +74,16 @@ public:
 
 class KDTreeNodeGPU
 {
+public:
 	KDTreeNodeGPU( void );
 
 	boundingBox bbox;
-	int left_index;
-	int right_index;
+	int left_child_index;
+	int right_child_index;
 	int first_tri_index;
 	int num_tris;
 
-	int ropes[6];
+	int neighbor_node_indices[6];
 
 	SplitAxis split_plane_axis;
 	float split_plane_value;

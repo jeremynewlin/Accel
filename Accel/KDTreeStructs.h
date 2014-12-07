@@ -72,4 +72,20 @@ public:
 	int id;
 };
 
+class KDTreeNodeGPU
+{
+	KDTreeNodeGPU( void );
+
+	boundingBox bbox;
+	int left_index;
+	int right_index;
+	int first_tri_index;
+	int num_tris;
+
+	int ropes[6];
+
+	SplitAxis split_plane_axis;
+	float split_plane_value;
+};
+
 #endif

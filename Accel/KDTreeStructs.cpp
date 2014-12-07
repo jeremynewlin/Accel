@@ -82,3 +82,13 @@ KDTreeNode* KDTreeNode::getNeighboringNode( glm::vec3 p )
 		return NULL;
 	}
 }
+
+
+////////////////////////////////////////////////////
+// KDTreeNodeGPU.
+////////////////////////////////////////////////////
+
+KDTreeNodeGPU::KDTreeNodeGPU()
+{
+	// TODO.
+}

@@ -76,3 +76,45 @@ Overall, we're happy with grid - hopefully it will be of some use!
 
 KD Tree
 -----
+
+Next up, we have a KD Tree acceleration structure for ray tracking.
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/kd_tree_cover.png)
+
+Similar to the uniform hash grid, this structure partitions the space into regions.  In this case, each cell of the tree contains a set of triangles of the mesh.  This is useful for ray tracking because when you want to intersect the mesh, you can use the tree structure to reduce the total number of intersections you have to compute.  Let's examine the bunny mesh without the KD Tree.
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/mesh_render.bmp)
+
+Now, the general case for intersecting this mesh using ray tracking is to simply loop over all of the triangles, finding the one that is the closes to the origin of the ray.  Pretty simple but has one glaring problem.  What about all of the pixels that have no chance of intersecting any triangle on the mesh?  That's the majority of the image!  We want to cull out those pixels and not even attempt ray tracking against the mesh.  The easiest way to do that is to first try intersecting the bounding box of the mesh.  If the ray doesn't hit that, there is no way that it could intersect a triangle on the mesh.
+
+image
+
+Now, you can think of a KD Tree as a set of bounding boxes of regions of the mesh.  Then we just arrange them in a fancy way that helps us accelerate this process.  The visualization below shows the number of ray-triangle intersections calculate at each pixel.  Green represents no intersections, while red indicates the max number of intersections.
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/kd_intersections_brute.bmp)
+
+Max number of intersections - 29808.  No acceleration structure at all - every pixel intersects every triangle.
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/kd_intersections_bb.bmp)
+
+Max number of intersections - 29808. Just a bounding box - every pixel that intersects the bounding box intersects every triangle.
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/kd_intersections_2000.bmp)
+
+Max number of intersections - 7147.  KD Tree with max 200 triangles / node.  You can vaguely see the global shape of the bunny
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/kd_intersections_200.bmp)
+
+Max number of intersections - 1666.  KD Tree with max 200 triangles / node.  If you know it's supposed to be a bunny you can see it.
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/kd_intersection_20.bmp)
+
+Max number of intersections - 467.  KD Tree with max 20 triangles / node.  Very few intersection test computed.
+
+So we're only intersecting when we need to, which is a great thing.  However you also have to look at the cost of building this structure, in terms of compute and memory.
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/construction_v_traversal_graph.png)
+
+As you can see, the construction time dwarfs an individual traversal time.  However, factoring in the large number of traversals needed to generate an image, it becomes clear that in general, you want to create an tree that can be traversed quickly, even it may cost a bit more to construct.
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/total_traversal_graph.png)

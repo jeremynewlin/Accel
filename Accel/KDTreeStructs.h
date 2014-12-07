@@ -8,7 +8,7 @@
 // const.
 ////////////////////////////////////////////////////
 
-const float KD_TREE_EPSILON = 0.00001f; //pow( 1.0f, -5 );
+const float KD_TREE_EPSILON = 0.00001f;
 
 
 ////////////////////////////////////////////////////
@@ -66,10 +66,27 @@ public:
 	// One rope for each face of the AABB encompassing the triangles in a node.
 	KDTreeNode *ropes[6];
 
-	bool isPointToLeftOfSplittingPlane( const glm::vec3&p ) const;
+	bool isPointToLeftOfSplittingPlane( const glm::vec3 &p ) const;
 	KDTreeNode* getNeighboringNode( glm::vec3 p );
 
 	int id;
+};
+
+class KDTreeNodeGPU
+{
+public:
+	KDTreeNodeGPU( void );
+
+	boundingBox bbox;
+	int left_child_index;
+	int right_child_index;
+	int first_tri_index;
+	int num_tris;
+
+	int neighbor_node_indices[6];
+
+	SplitAxis split_plane_axis;
+	float split_plane_value;
 };
 
 #endif

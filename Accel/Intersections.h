@@ -5,9 +5,6 @@
 #include "../glm/glm.hpp"
 
 
-const float INTERSECTION_EPSILON = pow( 1.0f, -5 );
-
-
 class Intersections
 {
 public:

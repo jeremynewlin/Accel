@@ -316,7 +316,7 @@ void runTimingComparison(hash_grid& grid, float h){
 
 
 ////////////////////////////////////////////////////
-// Test for ray/obj intersection without using a kd-tree.
+// Ray/obj intersection test mesthods.
 ////////////////////////////////////////////////////
 glm::vec3 bruteForceMeshTraversal( const mesh *m, const Ray &ray )
 {
@@ -352,10 +352,6 @@ glm::vec3 bruteForceMeshTraversal( const mesh *m, const Ray &ray )
 	return pixel_color;
 }
 
-
-////////////////////////////////////////////////////
-// Test for ray/obj intersection using a kd-tree.
-////////////////////////////////////////////////////
 glm::vec3 kdTreeMeshTraversal( const KDTreeCPU *kd_tree, const Ray &ray )
 {
 	glm::vec3 pixel_color( 0.0f, 0.0f, 0.0f );
@@ -371,10 +367,6 @@ glm::vec3 kdTreeMeshTraversal( const KDTreeCPU *kd_tree, const Ray &ray )
 	return pixel_color;
 }
 
-
-////////////////////////////////////////////////////
-// Test for ray/obj intersection using stackless kd-tree traversal.
-////////////////////////////////////////////////////
 glm::vec3 kdTreeMeshStacklessTraversal( const KDTreeCPU *kd_tree, const Ray &ray )
 {
 	glm::vec3 pixel_color( 0.0f, 0.0f, 0.0f );
@@ -401,11 +393,12 @@ int runKD()
 
 	// Initialize kd-tree.
 	//mesh* m = new mesh( "meshes\\bunny_low_poly_0.obj" );
-	mesh* m = new mesh( "meshes\\bunny.obj" );
-	KDTreeCPU * kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
+	mesh *m = new mesh( "meshes\\bunny.obj" );
+	KDTreeCPU *kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
 
 	const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
-	//// Camera settings.
+
+	// Camera settings.
 	float fovy = 45.0f;
 	glm::vec2 reso( 256, 256 );
 	glm::vec3 eyep( 0.5f, 0.5f, 10.0f );
@@ -413,6 +406,24 @@ int runKD()
 	//glm::vec3 vdir = glm::normalize( glm::vec3( 0.0f, 0.0f, 0.0f ) - eyep );
 	glm::vec3 uvec( 0.0f, 1.0f, 0.0f );
 	Camera *camera = new Camera( fovy, reso, eyep, vdir, uvec );
+
+
+ //   // Initialize kd-tree.
+ //   //mesh* m = new mesh( "meshes\\bunny_low_poly_0.obj" );
+ //   mesh* m = new mesh( "meshes\\bunny_small_3.obj" );
+ //   KDTreeCPU * kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
+
+ //   const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
+ //   
+	//// Camera settings.
+ //   float fovy = 45.0f;
+ //   glm::vec2 reso( 1280, 720 );
+ //   glm::vec3 eyep( 0.5f, 0.5f, 1.0f );
+ //   glm::vec3 vdir( 0.0f, 0.0f, -1.0f );
+ //   //glm::vec3 vdir = glm::normalize( glm::vec3( 0.0f, 0.0f, 0.0f ) - eyep );
+ //   glm::vec3 uvec( 0.0f, 1.0f, 0.0f );
+ //   Camera *camera = new Camera( fovy, reso, eyep, vdir, uvec );
+
 
 	// initialize output bmp image.
 	BMP output_img;
@@ -427,9 +438,10 @@ int runKD()
 		for ( int x = 0; x < reso.x; ++x ) {
 			Ray ray = camera->computeRayThroughPixel( x, y );
 
-			////glm::vec3 pixel_color = bruteForceMeshTraversal( m, ray );
-			////glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
-			glm::vec3 pixel_color = kdTreeMeshStacklessTraversal( kd_tree, ray );
+			glm::vec3 pixel_color( 0.0f, 0.0f, 0.0f );
+			//glm::vec3 pixel_color = bruteForceMeshTraversal( m, ray );
+			//glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
+			//glm::vec3 pixel_color = kdTreeMeshStacklessTraversal( kd_tree, ray );
 
 			//// Write pixel.
 			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
@@ -446,7 +458,7 @@ int runKD()
 	}
 
 	// Write output image at path specified above with name specified in scene config file.
-	output_img.WriteToFile( OUTPUT_IMG_PATH.c_str() );
+	//output_img.WriteToFile( OUTPUT_IMG_PATH.c_str() );
 
 	bool run = GL_TRUE;
 
@@ -519,7 +531,6 @@ int runKD()
 
 	glfwTerminate();
     exit(EXIT_SUCCESS);
-
 
 	//const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
 	////const std::string INPUT_MESH_PATH = "meshes\\bunny.obj";

@@ -33,7 +33,7 @@ KDTreeCPU::KDTreeCPU( int num_tris, glm::vec3 *tris, int num_verts, glm::vec3 *v
 
     // build rope structure
     KDTreeNode* ropes[6] = { NULL };
-    buildRopeStructure( root, ropes, false );
+    buildRopeStructure( root, ropes, true );
 }
 
 KDTreeCPU::~KDTreeCPU()
@@ -67,6 +67,11 @@ int KDTreeCPU::getNumLevels() const
 int KDTreeCPU::getNumLeaves( void ) const
 {
 	return num_leaves;
+}
+
+int KDTreeCPU::getNumNodes( void ) const
+{
+	return num_nodes;
 }
 
 SplitAxis KDTreeCPU::getLongestBoundingBoxSide( glm::vec3 min, glm::vec3 max )
@@ -116,8 +121,9 @@ float KDTreeCPU::getMaxTriValue( int tri_index, SplitAxis axis )
 
 
 ////////////////////////////////////////////////////
-// Compute tight fitting bounding box around triangles given a list of vertices.
+// Methods to compute tight fitting bounding boxes around triangles.
 ////////////////////////////////////////////////////
+
 boundingBox KDTreeCPU::computeTightFittingBoundingBox( int num_verts, glm::vec3 *verts )
 {
 	// Compute bounding box for input mesh.
@@ -152,10 +158,6 @@ boundingBox KDTreeCPU::computeTightFittingBoundingBox( int num_verts, glm::vec3 
 	return bbox;
 }
 
-
-////////////////////////////////////////////////////
-// Compute tight fitting bounding box around triangles given a list of triangle indices.
-////////////////////////////////////////////////////
 boundingBox KDTreeCPU::computeTightFittingBoundingBox( int num_tris, int *tri_indices )
 {
 	int num_verts = num_tris * 3;
@@ -185,8 +187,6 @@ KDTreeNode* KDTreeCPU::constructTreeMedianSpaceSplit( int num_tris, int *tri_ind
 	KDTreeNode *node = new KDTreeNode();
 	node->num_tris = num_tris;
 	node->tri_indices = tri_indices;
-	node->id = num_nodes;
-	++num_nodes;
 
 	// Override passed-in bounding box and create "tightest-fitting" bounding box around passed-in list of triangles.
 	if ( USE_TIGHT_FITTING_BOUNDING_BOXES ) {
@@ -204,6 +204,10 @@ KDTreeNode* KDTreeCPU::constructTreeMedianSpaceSplit( int num_tris, int *tri_ind
 		if ( curr_depth > num_levels ) {
 			num_levels = curr_depth;
 		}
+
+		// Set node ID.
+		node->id = num_nodes;
+		++num_nodes;
 
 		// Return leaf node.
 		++num_leaves;
@@ -301,6 +305,10 @@ KDTreeNode* KDTreeCPU::constructTreeMedianSpaceSplit( int num_tris, int *tri_ind
 	// Recurse.
 	node->left = constructTreeMedianSpaceSplit( left_tri_count, left_tri_indices, left_bbox, curr_depth + 1 );
 	node->right = constructTreeMedianSpaceSplit( right_tri_count, right_tri_indices, right_bbox, curr_depth + 1 );
+
+	// Set node ID.
+	node->id = num_nodes;
+	++num_nodes;
 
 	return node;
 }
@@ -401,9 +409,10 @@ bool KDTreeCPU::singleRayStacklessIntersect( KDTreeNode *curr_node, const glm::v
 {
 	bool intersection_detected = false;
 
-	while ( t_entry < t_exit ) {
-		if (glm::abs(t_entry - t_exit) < 1e-6){
-		}
+	float t_entry_prev = -INFINITY;
+	while ( t_entry < t_exit && t_entry > t_entry_prev ) {
+		t_entry_prev = t_entry;
+
 		// Down traversal - Working our way down to a leaf node.
 		glm::vec3 p_entry = ray_o + ( t_entry * ray_dir );
 		while ( !curr_node->is_leaf_node ) {
@@ -431,10 +440,6 @@ bool KDTreeCPU::singleRayStacklessIntersect( KDTreeNode *curr_node, const glm::v
 				}
 			}
 		}
-
-		//if (intersection_detected){
-		//	break;
-		//}
 
 		// Compute distance along ray to exit current node.
 		float tmp_t_near, tmp_t_far;
@@ -474,30 +479,7 @@ void KDTreeCPU::buildRopeStructure( KDTreeNode *curr_node, KDTreeNode *ropes[], 
 		//std::cout<<curr_node->id<<": "<<std::endl;
 		for ( int i = 0; i < 6; ++i ) {
 			curr_node->ropes[i] = ropes[i];
-			//if (i==0){
-			//	std::cout<<"LEFT: ";
-			//}
-			//else if (i==1){
-			//	std::cout<<"FRONT: ";
-			//}
-			//else if (i==2){
-			//	std::cout<<"RIGHT: ";
-			//}
-			//else if (i==3){
-			//	std::cout<<"BACK: ";
-			//}
-			//else if (i==4){
-			//	std::cout<<"TOP: ";
-			//}
-			//else if (i==5){
-			//	std::cout<<"BOTTOM: ";
-			//}
-			//if (ropes[i]!=0){
-			//	std::cout<<ropes[i]->id;
-			//}
-			//std::cout<<std::endl;
 		}
-		//std::cout<<std::endl;
 	}
 	else {
 		// Only optimize ropes on single ray case.
@@ -698,5 +680,20 @@ void KDTreeCPU::printNumTrianglesInEachNode( KDTreeNode *curr_node, int curr_dep
 	}
 	if ( curr_node->right ) {
 		printNumTrianglesInEachNode( curr_node->right, curr_depth + 1 );
+	}
+}
+
+void KDTreeCPU::printNodeIdsAndBounds( KDTreeNode *curr_node )
+{
+	std::cout << "Node ID: " << curr_node->id << std::endl;
+	std::cout << "Node bbox min: ( " << curr_node->bbox.min.x << ", " << curr_node->bbox.min.y << ", " << curr_node->bbox.min.z << " )" << std::endl;
+	std::cout << "Node bbox max: ( " << curr_node->bbox.max.x << ", " << curr_node->bbox.max.y << ", " << curr_node->bbox.max.z << " )" << std::endl;
+	std::cout << std::endl;
+
+	if ( curr_node->left ) {
+		printNodeIdsAndBounds( curr_node->left );
+	}
+	if ( curr_node->right ) {
+		printNodeIdsAndBounds( curr_node->right );
 	}
 }

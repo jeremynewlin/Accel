@@ -12,7 +12,7 @@ public:
 	~KDTreeGPU( void );
 
 	// Debug method.
-	void printGPUNodeDataWithCorrespondingCPUNodeData( KDTreeNode *curr_node );
+	void printGPUNodeDataWithCorrespondingCPUNodeData( KDTreeNode *curr_node, bool pause_on_each_node=false );
 
 private:
 	KDTreeNodeGPU *tree_nodes;

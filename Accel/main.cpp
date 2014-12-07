@@ -13,6 +13,7 @@
 #include "utils.h"
 #include "Intersections.h"
 #include <limits>
+#include "KDTreeGPU.h"
 
 using namespace std;
 
@@ -395,6 +396,12 @@ int runKD()
 	//mesh* m = new mesh( "meshes\\bunny_low_poly_0.obj" );
 	mesh *m = new mesh( "meshes\\bunny.obj" );
 	KDTreeCPU *kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
+
+	// Create GPU kd-tree structure from CPU kd-tree structure.
+	KDTreeGPU *kd_tree_gpu = new KDTreeGPU( kd_tree );
+
+	// DEBUG.
+	//kd_tree_gpu->printGPUNodeDataWithCorrespondingCPUNodeData( kd_tree->getRootNode(), true );
 
 	const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
 
@@ -928,5 +935,6 @@ int runGrid(){
 int main(){
 
 	//return runGrid();
-	return runKD2();
+	//return runKD2();
+	return runKD();
 }

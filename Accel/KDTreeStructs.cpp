@@ -14,6 +14,7 @@ KDTreeNode::KDTreeNode()
 	for ( int i = 0; i < 6; ++i ) {
 		ropes[i] = NULL;
 	}
+	id = -99;
 }
 
 KDTreeNode::~KDTreeNode()
@@ -143,6 +144,9 @@ void KDTreeNode::prettyPrint()
 			std::cout << "rope " << i << ": NULL" << std::endl;
 		}
 	}
+
+	// Print empty line.
+	std::cout << std::endl;
 }
 
 
@@ -191,11 +195,9 @@ void KDTreeNodeGPU::prettyPrint()
 
 	// Print neighboring nodes.
 	for ( int i = 0; i < 6; ++i ) {
-		if ( neighbor_node_indices[i] ) {
-			std::cout << "neighbor node index " << i << ": " << neighbor_node_indices[i] << std::endl;
-		}
-		else {
-			std::cout << "neighbor node index " << i << ": NULL" << std::endl;
-		}
+		std::cout << "neighbor node index " << i << ": " << neighbor_node_indices[i] << std::endl;
 	}
+
+	// Print empty line.
+	std::cout << std::endl;
 }

@@ -1,4 +1,5 @@
 #include "KDTreeGPU.h"
+#include <iostream>
 
 
 ////////////////////////////////////////////////////
@@ -16,7 +17,7 @@ KDTreeGPU::KDTreeGPU( KDTreeCPU *kd_tree_cpu )
 
 	// Populate tree_nodes and tri_index_list.
 	tri_index_list.clear();
-	buildTree( kd_tree_cpu->getRootNode() );
+	buildTree( cpu_tree_root );
 }
 
 KDTreeGPU::~KDTreeGPU()
@@ -76,7 +77,19 @@ void KDTreeGPU::buildTree( KDTreeNode *curr_node )
 // Debug methods.
 ////////////////////////////////////////////////////
 
-void KDTreeGPU::printGPUNodeDataWithCorrespondingCPUNodeData( KDTreeNode *curr_node )
+void KDTreeGPU::printGPUNodeDataWithCorrespondingCPUNodeData( KDTreeNode *curr_node, bool pause_on_each_node )
 {
-	// TODO.
+	curr_node->prettyPrint();
+	tree_nodes[curr_node->id].prettyPrint();
+
+	if ( pause_on_each_node ) {
+		std::cin.ignore();
+	}
+
+    if ( curr_node->left ) {
+        printGPUNodeDataWithCorrespondingCPUNodeData( curr_node->left, pause_on_each_node );
+    }
+	if ( curr_node->right ) {
+        printGPUNodeDataWithCorrespondingCPUNodeData( curr_node->right, pause_on_each_node );
+    }
 }

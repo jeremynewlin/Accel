@@ -391,38 +391,43 @@ int runKD()
 {
 	srand(time(NULL));
 
-	//// Initialize kd-tree.
-	////mesh* m = new mesh( "meshes\\bunny_low_poly_0.obj" );
-	//mesh* m = new mesh( "meshes\\bunny.obj" );
-	//KDTreeCPU * kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
+	// Initialize kd-tree.
+	//mesh* m = new mesh( "meshes\\bunny_low_poly_0.obj" );
+	mesh *m = new mesh( "meshes\\bunny.obj" );
+	KDTreeCPU *kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
 
-	//const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
+	// DEBUG.
+	//kd_tree->printNodeIdsAndBounds( kd_tree->getRootNode() );
+	//std::cout << kd_tree->getNumNodes() << std::endl;
+	//std::cin.ignore();
 
-	//// Camera settings.
-	//float fovy = 45.0f;
-	//glm::vec2 reso( 256, 256 );
-	//glm::vec3 eyep( 0.5f, 0.5f, 10.0f );
-	//glm::vec3 vdir( 0.0f, 0.0f, -1.0f );
-	////glm::vec3 vdir = glm::normalize( glm::vec3( 0.0f, 0.0f, 0.0f ) - eyep );
-	//glm::vec3 uvec( 0.0f, 1.0f, 0.0f );
-	//Camera *camera = new Camera( fovy, reso, eyep, vdir, uvec );
+	const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
 
-
-    // Initialize kd-tree.
-    //mesh* m = new mesh( "meshes\\bunny_low_poly_0.obj" );
-    mesh* m = new mesh( "meshes\\bunny_small_3.obj" );
-    KDTreeCPU * kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
-
-    const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
-    
 	// Camera settings.
-    float fovy = 45.0f;
-    glm::vec2 reso( 1280, 720 );
-    glm::vec3 eyep( 0.5f, 0.5f, 1.0f );
-    glm::vec3 vdir( 0.0f, 0.0f, -1.0f );
-    //glm::vec3 vdir = glm::normalize( glm::vec3( 0.0f, 0.0f, 0.0f ) - eyep );
-    glm::vec3 uvec( 0.0f, 1.0f, 0.0f );
-    Camera *camera = new Camera( fovy, reso, eyep, vdir, uvec );
+	float fovy = 45.0f;
+	glm::vec2 reso( 256, 256 );
+	glm::vec3 eyep( 0.5f, 0.5f, 10.0f );
+	glm::vec3 vdir( 0.0f, 0.0f, -1.0f );
+	//glm::vec3 vdir = glm::normalize( glm::vec3( 0.0f, 0.0f, 0.0f ) - eyep );
+	glm::vec3 uvec( 0.0f, 1.0f, 0.0f );
+	Camera *camera = new Camera( fovy, reso, eyep, vdir, uvec );
+
+
+ //   // Initialize kd-tree.
+ //   //mesh* m = new mesh( "meshes\\bunny_low_poly_0.obj" );
+ //   mesh* m = new mesh( "meshes\\bunny_small_3.obj" );
+ //   KDTreeCPU * kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
+
+ //   const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
+ //   
+	//// Camera settings.
+ //   float fovy = 45.0f;
+ //   glm::vec2 reso( 1280, 720 );
+ //   glm::vec3 eyep( 0.5f, 0.5f, 1.0f );
+ //   glm::vec3 vdir( 0.0f, 0.0f, -1.0f );
+ //   //glm::vec3 vdir = glm::normalize( glm::vec3( 0.0f, 0.0f, 0.0f ) - eyep );
+ //   glm::vec3 uvec( 0.0f, 1.0f, 0.0f );
+ //   Camera *camera = new Camera( fovy, reso, eyep, vdir, uvec );
 
 
 	// initialize output bmp image.
@@ -438,10 +443,10 @@ int runKD()
 		for ( int x = 0; x < reso.x; ++x ) {
 			Ray ray = camera->computeRayThroughPixel( x, y );
 
-			//glm::vec3 pixel_color( 0.0f, 0.0f, 0.0f );
+			glm::vec3 pixel_color( 0.0f, 0.0f, 0.0f );
 			//glm::vec3 pixel_color = bruteForceMeshTraversal( m, ray );
 			//glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
-			glm::vec3 pixel_color = kdTreeMeshStacklessTraversal( kd_tree, ray );
+			//glm::vec3 pixel_color = kdTreeMeshStacklessTraversal( kd_tree, ray );
 
 			//// Write pixel.
 			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
@@ -458,7 +463,7 @@ int runKD()
 	}
 
 	// Write output image at path specified above with name specified in scene config file.
-	output_img.WriteToFile( OUTPUT_IMG_PATH.c_str() );
+	//output_img.WriteToFile( OUTPUT_IMG_PATH.c_str() );
 
 	bool run = GL_TRUE;
 
@@ -501,7 +506,7 @@ int runKD()
 
 		// Visualize kd-tree.
 		drawMesh( m );
-		//drawKDTree( kd_tree->getRootNode(), 1, kd_tree->getNumLevels() );
+		drawKDTree( kd_tree->getRootNode(), 1, kd_tree->getNumLevels() );
 
 		GLenum errCode;
 		const GLubyte* errString;

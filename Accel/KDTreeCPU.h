@@ -11,7 +11,7 @@
 // Constants.
 ////////////////////////////////////////////////////
 
-const int NUM_TRIS_PER_NODE = 20;
+const int NUM_TRIS_PER_NODE = 2000;
 const bool USE_TIGHT_FITTING_BOUNDING_BOXES = false;
 const float INFINITY = std::numeric_limits<float>::max();
 
@@ -33,9 +33,11 @@ public:
 	KDTreeNode* getRootNode( void ) const;
 	int getNumLevels( void ) const;
 	int getNumLeaves( void ) const;
+	int getNumNodes( void ) const;
 
 	// Debug methods.
-	void printNumTrianglesInEachNode( KDTreeNode *curr_node, int curr_depth = 1 );
+	void printNumTrianglesInEachNode( KDTreeNode *curr_node, int curr_depth=1 );
+	void printNodeIdsAndBounds( KDTreeNode *curr_node );
 
 private:
 	// kd-tree variables.

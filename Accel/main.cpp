@@ -15,6 +15,7 @@
 #include <limits>
 #include "KDTreeGPU.h"
 #include "KDTraversalOnGPU.h"
+#include "SimpleTimer.h"
 
 using namespace std;
 
@@ -329,7 +330,8 @@ glm::vec3 bruteForceMeshTraversal( const mesh *m, const Ray &ray )
 	bool intersects_aabb = Intersections::aabbIntersect( m->bb, ray.origin, ray.dir, t_near, t_far );
 
 	if ( intersects_aabb ) {
-		float t = std::numeric_limits<float>::max();
+		//float t = std::numeric_limits<float>::max();
+		float t = 999999999.0f;
 
 		for ( int i = 0; i < m->numTris; ++i ) {
 			glm::vec3 tri = m->tris[i];
@@ -338,7 +340,8 @@ glm::vec3 bruteForceMeshTraversal( const mesh *m, const Ray &ray )
 			glm::vec3 v2 = m->verts[( int )tri[2]];
 
 			// Perform ray/triangle intersection test.
-			float tmp_t = std::numeric_limits<float>::max();
+			//float tmp_t = std::numeric_limits<float>::max();
+			float tmp_t = 999999999.0f;
 			glm::vec3 tmp_normal( 0.0f, 0.0f, 0.0f );
 			bool intersects_tri = Intersections::triIntersect( ray.origin, ray.dir, v0, v1, v2, tmp_t, tmp_normal );
 
@@ -561,124 +564,159 @@ int runKD2()
 
 	// Initialize kd-tree.
 	//mesh* m = new mesh( "meshes\\bunny_low_poly_0.obj" );
-	mesh* m = new mesh( "meshes\\bunny_30k.obj" );
+	mesh* m = new mesh( "meshes\\bunny_small_3.obj" );
 	KDTreeCPU * kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
 
-	const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
-	//// Camera settings.
+	KDTreeGPU *kd_tree_gpu = new KDTreeGPU( kd_tree );
+
+	//const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
+
+	// Camera settings.
 	float fovy = 45.0f;
 	glm::vec2 reso( 750, 750 );
-	glm::vec3 eyep( 0.0f, 1.0f, 5.0f );
-	glm::vec3 eyet( 0.0f, 0.0f, 0.0f );
-	glm::vec3 vdir = glm::normalize(eyet-eyep);
-	//glm::vec3 vdir = glm::normalize( glm::vec3( 0.0f, 0.0f, 0.0f ) - eyep );
+	glm::vec3 eyep( 0.5f, 0.5f, 1.0f );
+	glm::vec3 vdir( 0.0f, 0.0f, -1.0f );
 	glm::vec3 uvec( 0.0f, 1.0f, 0.0f );
 	Camera *camera = new Camera( fovy, reso, eyep, vdir, uvec );
 
-	// initialize output bmp image.
-	BMP output_img;
-	output_img.SetSize( ( int )reso.x, ( int )reso.y );
-	output_img.SetBitDepth( 24 );
+	//// initialize output bmp image.
+	//BMP output_img;
+	//output_img.SetSize( ( int )reso.x, ( int )reso.y );
+	//output_img.SetBitDepth( 24 );
 
-	int lines_since_last_output = 0;
-	int lines_between_outputs = 10;
+	//int lines_since_last_output = 0;
+	//int lines_between_outputs = 10;
 
 	vector<float> times;
 
 	t = clock();
 	float maxTime = 0;
 	float minTime = INFINITY;
-	// Iterate through all pixels.
-	for ( int y = 0; y < reso.y; ++y ) {
-		for ( int x = 0; x < reso.x; ++x ) {
-			Ray ray = camera->computeRayThroughPixel( x, y );
+	//// Iterate through all pixels.
+	//for ( int y = 0; y < reso.y; ++y ) {
+	//	for ( int x = 0; x < reso.x; ++x ) {
+	//		Ray ray = camera->computeRayThroughPixel( x, y );
 
-			////glm::vec3 pixel_color = bruteForceMeshTraversal( m, ray );
-			////glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
-			clock_t pixel_t = clock();
-			glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
-			pixel_t = clock() - pixel_t;
+	//		////glm::vec3 pixel_color = bruteForceMeshTraversal( m, ray );
+	//		////glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
+	//		clock_t pixel_t = clock();
+	//		glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
+	//		pixel_t = clock() - pixel_t;
 
-			float pixelTime = (float)pixel_t / (float)CLOCKS_PER_SEC;
+	//		float pixelTime = (float)pixel_t / (float)CLOCKS_PER_SEC;
 
-			times.push_back(pixelTime);
+	//		times.push_back(pixelTime);
 
-			//cout<<pixelTime<<endl;
+	//		//cout<<pixelTime<<endl;
 
-			if (pixelTime > maxTime){
-				maxTime = pixelTime;
-			}
-			if (pixelTime < minTime){
-				minTime = pixelTime;
-			}
+	//		if (pixelTime > maxTime){
+	//			maxTime = pixelTime;
+	//		}
+	//		if (pixelTime < minTime){
+	//			minTime = pixelTime;
+	//		}
 
-			//// Write pixel.
-			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
-			output_img( x, y )->Green = ( ebmpBYTE )( pixel_color.y * 255.0f );
-			output_img( x, y )->Blue = ( ebmpBYTE )( pixel_color.z * 255.0f );
-		}
+	//		//// Write pixel.
+	//		output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
+	//		output_img( x, y )->Green = ( ebmpBYTE )( pixel_color.y * 255.0f );
+	//		output_img( x, y )->Blue = ( ebmpBYTE )( pixel_color.z * 255.0f );
+	//	}
 
-		// DEBUG.
-		++lines_since_last_output;
-		if ( lines_since_last_output == lines_between_outputs ) {
-			lines_since_last_output = 0;
-			std::cout << "Rendered " << y + 1 << " lines." << std::endl;
-		}
-	}
+	//	// DEBUG.
+	//	++lines_since_last_output;
+	//	if ( lines_since_last_output == lines_between_outputs ) {
+	//		lines_since_last_output = 0;
+	//		std::cout << "Rendered " << y + 1 << " lines." << std::endl;
+	//	}
+	//}
+
+
+	// Call CUDA kernel to compute pixel values.
+	glm::vec3 *ray_cast_image = cudaRayCastObj( camera, m, kd_tree_gpu, true );
+
 
 	cout<<maxTime<<endl;
 
 	t = clock() - t;
 	cout<<(float)t/(float)CLOCKS_PER_SEC<<endl;
 
-	int index = 0;
+	//int index = 0;
+	//for ( int y = 0; y < reso.y; ++y ) {
+	//	for ( int x = 0; x < reso.x; ++x ) {
+	//		Ray ray = camera->computeRayThroughPixel( x, y );
+
+	//		glm::vec3 pixel_color;
+	//		////glm::vec3 pixel_color = bruteForceMeshTraversal( m, ray );
+	//		////glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
+	//		clock_t pixel_t = clock();
+	//		//glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
+	//		pixel_t = clock() - pixel_t;
+
+	//		float pixelTime = (float) pixel_t;
+	//		pixelTime = times[index];
+	//		index += 1;
+
+	//		glm::vec3 red(1,0,0);
+	//		glm::vec3 green(0,1,0);
+	//		glm::vec3 blue (0,0,1);
+	//		
+	//		pixelTime = pixelTime / maxTime;
+	//		if (pixelTime > 1) pixelTime = 1;
+	//		
+	//		//if (pixelTime >= 0.5f){
+	//			//green to red
+	//			pixel_color = (1-pixelTime)*green + pixelTime*red;
+	//		//}
+	//		//else{
+	//		//	//blue to green
+	//		//	pixel_color = (1-pixelTime)*blue + pixelTime*green;
+	//		//}
+
+	//		//// Write pixel.
+	//		output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
+	//		output_img( x, y )->Green = ( ebmpBYTE )( pixel_color.y * 255.0f );
+	//		output_img( x, y )->Blue = ( ebmpBYTE )( pixel_color.z * 255.0f );
+	//	}
+
+	//	// DEBUG.
+	//	++lines_since_last_output;
+	//	if ( lines_since_last_output == lines_between_outputs ) {
+	//		lines_since_last_output = 0;
+	//		std::cout << "Rendered " << y + 1 << " lines." << std::endl;
+	//	}
+	//}
+
+	// Write output image at path specified above with name specified in scene config file.
+	//output_img.WriteToFile( OUTPUT_IMG_PATH.c_str() );
+
+
+	// Initialize output bmp image.
+	BMP output_img;
+	output_img.SetSize( ( int )reso.x, ( int )reso.y );
+	output_img.SetBitDepth( 24 );
+
+	std::cout << "Writing output..." << std::endl; // DEBUG.
+
+	// Iterate through all pixels.
 	for ( int y = 0; y < reso.y; ++y ) {
 		for ( int x = 0; x < reso.x; ++x ) {
-			Ray ray = camera->computeRayThroughPixel( x, y );
+			int index = ( y * ( int )reso.x ) + x;
+			glm::vec3 pixel_color = ray_cast_image[index];;
 
-			glm::vec3 pixel_color;
-			////glm::vec3 pixel_color = bruteForceMeshTraversal( m, ray );
-			////glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
-			clock_t pixel_t = clock();
-			//glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
-			pixel_t = clock() - pixel_t;
-
-			float pixelTime = (float) pixel_t;
-			pixelTime = times[index];
-			index += 1;
-
-			glm::vec3 red(1,0,0);
-			glm::vec3 green(0,1,0);
-			glm::vec3 blue (0,0,1);
-			
-			pixelTime = pixelTime / maxTime;
-			if (pixelTime > 1) pixelTime = 1;
-			
-			//if (pixelTime >= 0.5f){
-				//green to red
-				pixel_color = (1-pixelTime)*green + pixelTime*red;
-			//}
-			//else{
-			//	//blue to green
-			//	pixel_color = (1-pixelTime)*blue + pixelTime*green;
-			//}
-
-			//// Write pixel.
+			// Write pixel.
 			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
 			output_img( x, y )->Green = ( ebmpBYTE )( pixel_color.y * 255.0f );
 			output_img( x, y )->Blue = ( ebmpBYTE )( pixel_color.z * 255.0f );
 		}
-
-		// DEBUG.
-		++lines_since_last_output;
-		if ( lines_since_last_output == lines_between_outputs ) {
-			lines_since_last_output = 0;
-			std::cout << "Rendered " << y + 1 << " lines." << std::endl;
-		}
 	}
 
 	// Write output image at path specified above with name specified in scene config file.
+	const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
 	output_img.WriteToFile( OUTPUT_IMG_PATH.c_str() );
+
+	delete[] ray_cast_image;
+
+
 
 	bool run = GL_TRUE;
 
@@ -758,8 +796,13 @@ int runKDOnGPU()
 	std::cout << "Reading in mesh..." << std::endl; // DEBUG.
 
 	// Initialize kd-tree.
-	mesh *m = new mesh( "meshes\\bunny_30k.obj" );
+	mesh *m = new mesh( "meshes\\bunny_small_3.obj" );
 
+	// DEBUG.
+	//std::cout << "( " << m->bb.min.x << ", " << m->bb.min.y << ", " << m->bb.min.z << " )" << std::endl;
+	//std::cout << "( " << m->bb.max.x << ", " << m->bb.max.y << ", " << m->bb.max.z << " )" << std::endl;
+	//std::cout << m->numTris << std::endl;
+	//std::cin.ignore();
 	std::cout << "Constructing CPU kd-tree..." << std::endl; // DEBUG.
 
 	KDTreeCPU *kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
@@ -772,7 +815,7 @@ int runKDOnGPU()
 	// Camera settings.
 	float fovy = 45.0f;
 	glm::vec2 reso( 750, 750 );
-	glm::vec3 eyep( 0.5f, 0.5f, 10.0f );
+	glm::vec3 eyep( 0.5f, 0.5f, 1.0f );
 	glm::vec3 vdir( 0.0f, 0.0f, -1.0f );
 	glm::vec3 uvec( 0.0f, 1.0f, 0.0f );
 	Camera *camera = new Camera( fovy, reso, eyep, vdir, uvec );
@@ -820,6 +863,235 @@ int runKDOnGPU()
 	output_img.WriteToFile( OUTPUT_IMG_PATH.c_str() );
 
 	delete[] ray_cast_image;
+
+	return 0;
+}
+
+int runKDTreePerformanceTests()
+{
+	std::cout << "Setup..." << std::endl; // DEBUG.
+
+	SimpleTimer timer;
+
+	mesh *obj_mesh = new mesh( "meshes\\bunny_small_0.obj" );
+
+	float fovy = 45.0f;
+	glm::vec2 reso( 256, 256 );
+	glm::vec3 eyep( 0.5f, 0.5f, 1.0f );
+	glm::vec3 vdir( 0.0f, 0.0f, -1.0f );
+	glm::vec3 uvec( 0.0f, 1.0f, 0.0f );
+	Camera *camera = new Camera( fovy, reso, eyep, vdir, uvec );
+
+	BMP output_img;
+	output_img.SetSize( ( int )reso.x, ( int )reso.y );
+	output_img.SetBitDepth( 24 );
+
+	float time_elapsed;
+	std::string output_img_path;
+
+
+	////////////////////////////////////////////////////
+	// CPU brute force.
+	////////////////////////////////////////////////////
+
+	std::cout << "CPU brute force..." << std::endl; // DEBUG.
+
+	timer.start();
+
+	// Iterate through all pixels.
+	for ( int y = 0; y < reso.y; ++y ) {
+		for ( int x = 0; x < reso.x; ++x ) {
+			Ray ray = camera->computeRayThroughPixel( x, y );
+			glm::vec3 pixel_color = bruteForceMeshTraversal( obj_mesh, ray );
+
+			// Write pixel.
+			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
+			output_img( x, y )->Green = ( ebmpBYTE )( pixel_color.y * 255.0f );
+			output_img( x, y )->Blue = ( ebmpBYTE )( pixel_color.z * 255.0f );
+		}
+	}
+
+	time_elapsed = timer.stop();
+	std::cout << "TRAVERSAL - CPU brute force: " << time_elapsed << std::endl;
+
+	output_img_path = "ray_casting_output\\cpu_brute_force.bmp";
+	output_img.WriteToFile( output_img_path.c_str() );
+
+
+	////////////////////////////////////////////////////
+	// CPU stack.
+	////////////////////////////////////////////////////
+
+	std::cout << "CPU stack..." << std::endl; // DEBUG.
+
+	timer.start();
+	KDTreeCPU *kd_tree = new KDTreeCPU( obj_mesh->numTris, obj_mesh->tris, obj_mesh->numVerts, obj_mesh->verts );
+	time_elapsed = timer.stop();
+	std::cout << "CONSTRUCTION - CPU kd-tree: " << time_elapsed << std::endl;
+
+	timer.start();
+
+	// Iterate through all pixels.
+	for ( int y = 0; y < reso.y; ++y ) {
+		for ( int x = 0; x < reso.x; ++x ) {
+			Ray ray = camera->computeRayThroughPixel( x, y );
+			glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
+
+			// Write pixel.
+			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
+			output_img( x, y )->Green = ( ebmpBYTE )( pixel_color.y * 255.0f );
+			output_img( x, y )->Blue = ( ebmpBYTE )( pixel_color.z * 255.0f );
+		}
+	}
+
+	time_elapsed = timer.stop();
+	std::cout << "TRAVERSAL - CPU stack: " << time_elapsed << std::endl;
+
+	output_img_path = "ray_casting_output\\cpu_stack.bmp";
+	output_img.WriteToFile( output_img_path.c_str() );
+
+
+	////////////////////////////////////////////////////
+	// CPU stackless with CPU structs.
+	////////////////////////////////////////////////////
+
+	std::cout << "CPU stackless with CPU structs..." << std::endl; // DEBUG.
+
+	timer.start();
+	kd_tree->buildRopeStructure();
+	time_elapsed = timer.stop();
+	std::cout << "CONSTRUCTION - CPU kd-tree rope structure: " << time_elapsed << std::endl;
+
+	timer.start();
+
+	// Iterate through all pixels.
+	for ( int y = 0; y < reso.y; ++y ) {
+		for ( int x = 0; x < reso.x; ++x ) {
+			Ray ray = camera->computeRayThroughPixel( x, y );
+			glm::vec3 pixel_color = kdTreeMeshStacklessTraversal( kd_tree, ray );
+
+			// Write pixel.
+			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
+			output_img( x, y )->Green = ( ebmpBYTE )( pixel_color.y * 255.0f );
+			output_img( x, y )->Blue = ( ebmpBYTE )( pixel_color.z * 255.0f );
+		}
+	}
+
+	time_elapsed = timer.stop();
+	std::cout << "TRAVERSAL - CPU stackless with CPU structs: " << time_elapsed << std::endl;
+
+	output_img_path = "ray_casting_output\\cpu_stackless_with_cpu_structs.bmp";
+	output_img.WriteToFile( output_img_path.c_str() );
+
+
+	////////////////////////////////////////////////////
+	// CPU stackless with GPU structs.
+	////////////////////////////////////////////////////
+
+	std::cout << "CPU stackless with GPU structs..." << std::endl; // DEBUG.
+
+	timer.start();
+	KDTreeGPU *kd_tree_gpu = new KDTreeGPU( kd_tree );
+
+	// Create list of triangle indices for GPU kd-tree.
+	std::vector<int> tri_index_vector = kd_tree_gpu->getTriIndexList();
+	int *tri_index_array = new int[tri_index_vector.size()];
+	for ( int i = 0; i < tri_index_vector.size(); ++i ) {
+		tri_index_array[i] = tri_index_vector[i];
+	}
+
+	time_elapsed = timer.stop();
+	std::cout << "CONSTRUCTION - GPU kd-tree: " << time_elapsed << std::endl;
+
+	timer.start();
+
+	// Iterate through all pixels.
+	for ( int y = 0; y < reso.y; ++y ) {
+		for ( int x = 0; x < reso.x; ++x ) {
+			Ray ray = camera->computeRayThroughPixel( x, y );
+			glm::vec3 pixel_color = kdTreeGPUMeshStacklessTraversal( kd_tree_gpu, tri_index_array, ray );
+
+			// Write pixel.
+			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
+			output_img( x, y )->Green = ( ebmpBYTE )( pixel_color.y * 255.0f );
+			output_img( x, y )->Blue = ( ebmpBYTE )( pixel_color.z * 255.0f );
+		}
+	}
+
+	time_elapsed = timer.stop();
+	std::cout << "TRAVERSAL - CPU stackless with GPU structs: " << time_elapsed << std::endl;
+
+	output_img_path = "ray_casting_output\\cpu_stackless_with_gpu_structs.bmp";
+	output_img.WriteToFile( output_img_path.c_str() );
+
+
+	////////////////////////////////////////////////////
+	// GPU brute force.
+	////////////////////////////////////////////////////
+
+	std::cout << "GPU brute force..." << std::endl; // DEBUG.
+
+	timer.start();
+	glm::vec3 *ray_cast_image_brute_force = cudaRayCastObj( camera, obj_mesh, kd_tree_gpu, true );
+	time_elapsed = timer.stop();
+	std::cout << "TRAVERSAL - GPU brute force: " << time_elapsed << std::endl;
+
+	// Iterate through all pixels.
+	for ( int y = 0; y < reso.y; ++y ) {
+		for ( int x = 0; x < reso.x; ++x ) {
+			int index = ( y * ( int )reso.x ) + x;
+			glm::vec3 pixel_color = ray_cast_image_brute_force[index];;
+
+			// Write pixel.
+			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
+			output_img( x, y )->Green = ( ebmpBYTE )( pixel_color.y * 255.0f );
+			output_img( x, y )->Blue = ( ebmpBYTE )( pixel_color.z * 255.0f );
+		}
+	}
+
+	output_img_path = "ray_casting_output\\gpu_brute_force.bmp";
+	output_img.WriteToFile( output_img_path.c_str() );
+
+
+	////////////////////////////////////////////////////
+	// GPU stackless.
+	////////////////////////////////////////////////////
+
+	std::cout << "GPU stackless..." << std::endl; // DEBUG.
+
+	timer.start();
+	glm::vec3 *ray_cast_image_stackless = cudaRayCastObj( camera, obj_mesh, kd_tree_gpu, false );
+	time_elapsed = timer.stop();
+	std::cout << "TRAVERSAL - GPU stackless: " << time_elapsed << std::endl;
+
+	// Iterate through all pixels.
+	for ( int y = 0; y < reso.y; ++y ) {
+		for ( int x = 0; x < reso.x; ++x ) {
+			int index = ( y * ( int )reso.x ) + x;
+			glm::vec3 pixel_color = ray_cast_image_stackless[index];;
+
+			// Write pixel.
+			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
+			output_img( x, y )->Green = ( ebmpBYTE )( pixel_color.y * 255.0f );
+			output_img( x, y )->Blue = ( ebmpBYTE )( pixel_color.z * 255.0f );
+		}
+	}
+
+	output_img_path = "ray_casting_output\\gpu_stackless.bmp";
+	output_img.WriteToFile( output_img_path.c_str() );
+
+
+	////////////////////////////////////////////////////
+	// Cleanup.
+	////////////////////////////////////////////////////
+
+	delete camera;
+	delete obj_mesh;
+	delete kd_tree;
+	delete kd_tree_gpu;
+	delete[] tri_index_array;
+	delete[] ray_cast_image_brute_force;
+	delete[] ray_cast_image_stackless;
 
 	return 0;
 }
@@ -957,6 +1229,6 @@ int main(){
 	//return runGrid();
 	//return runKD2();
 	//return runKD();
-	runKDOnGPU();
-	int x = 0;
+	runKDTreePerformanceTests();
+	std::cin.ignore();
 }

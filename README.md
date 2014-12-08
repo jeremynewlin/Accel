@@ -192,25 +192,26 @@ This video demonstrates results after implementing stackless kd-tree traversal o
 
 Here are some code samples that can be used to perform various kd-tree operations on both the CPU and GPU using our library.
 
-To create a CPU-friendly kd-tree for a mesh and perform ray/mesh intersection testing:
+To create a kd-tree with ropes for some input mesh and perform ray/mesh intersection testing using both stack and stackless traversal techniques:
 
 ```c++
 #include "KDTreeCPU.h"
 
 // obj_mesh <-- Mesh data structure
 
+// Creates a traditional kd-tree, and also builds the rope structure for stackless traversal.
 KDTreeCPU *kd_tree = new KDTreeCPU( obj_mesh->num_tris, obj_mesh->tris, obj_mesh->num_verts, obj_mesh->verts );
 
-// Returns whether or not there was an intersection with the ray and mesh.
-// Also returns t, hit_point, and normal,  the distance along ray from ray origin where intersection occurred, the world-space intersection point, the normal at the intersection point, respectively.
+// Returns whether or not there was an intersection with the ray and the mesh the kd-tree was built around.
+// Also returns t, hit_point, and normal,  which are the distance along the ray from the ray origin where the intersection occurred, the world-space intersection point, and the normal at the intersection point, respectively.
 bool intersects = kd_tree->intersect( ray.origin, ray.dir, t, hit_point, normal );
 
-// Equivalent functionality to previous intersection test, but traverses kd-tree in a stackless manner.
+// Equivalent functionality to previous intersection test, but traverses kd-tree in a stackless manner using rope structure.
 bool intersects_stackless = kd_tree->singleRayStacklessIntersect( ray.origin, ray.dir, t, hit_point, normal );
 
 ```
 
-To create a GPU-friendly stackless kd-tree for a mesh and perform ray/mesh intersection testing:
+To create a GPU-friendly stackless kd-tree for a mesh and perform ray/mesh intersection testing using this new GPU-friendly data structure:
 
 ```c++
 #include "KDTreeGPU.h"
@@ -219,15 +220,13 @@ To create a GPU-friendly stackless kd-tree for a mesh and perform ray/mesh inter
 
 KDTreeGPU *kd_tree_gpu = new KDTreeGPU( kd_tree );
 
-// Create list of triangle indices for GPU kd-tree.
+// Create int array of triangle indices from GPU kd-tree int vector.
 std::vector<int> tri_index_vector = kd_tree_gpu->getTriIndexList();
 int *tri_index_array = new int[tri_index_vector.size()];
 for ( int i = 0; i < tri_index_vector.size(); ++i ) {
     tri_index_array[i] = tri_index_vector[i];
 }
 
-float t;
-glm::vec3 hit_point, normal;
 bool intersects = cpuStacklessGPUIntersect( ray.origin, ray.dir, kd_tree_gpu->getRootIndex(), kd_tree_gpu->getTreeNodes(), tri_index_array, kd_tree_gpu->getMeshTris(), kd_tree_gpu->getMeshVerts(), t, hit_point, normal );
 
 ```
@@ -237,7 +236,11 @@ To perform stackless kd-tree traversal on the GPU:
 ```c++
 #include "KDTraversalOnGPU.h"
 
-__device__
-bool gpuStacklessGPUIntersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir, int root_index, KDTreeNodeGPU *tree_nodes, int *kd_tri_index_list, glm::vec3 *tris, glm::vec3 *verts, float &t, glm::vec3 &hit_point, glm::vec3 &normal );
+// The following method can be executed on GPU devices and can be called from within CUDA kernels.
+// Ray variables: ray_o, ray_dir.
+// KDTreeGPU variables: root_index, tree_nodes, kd_tri_index_list.
+// Mesh variables: tris, verts.
+// Returns: t, hit_point, normal.
+bool intersects = gpuStacklessGPUIntersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir, int root_index, KDTreeNodeGPU *tree_nodes, int *kd_tri_index_list, glm::vec3 *tris, glm::vec3 *verts, float &t, glm::vec3 &hit_point, glm::vec3 &normal );
 
 ```

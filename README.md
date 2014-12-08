@@ -116,3 +116,27 @@ Max number of intersections - 1666.  KD Tree with max 200 triangles / node.  If 
 Max number of intersections - 467.  KD Tree with max 20 triangles / node.  Very few intersection test computed.
 
 So we're only intersecting when we need to, which is a great thing.
+
+Now we're going to show some other performance statistics for the KD Tree.
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/KD_Perf_1.png)
+
+This graph is showing the render time of a scene with various amounts of triangles.  As you can see, the CPU Brute Force method is by far the slowest.  We zoom in progressively on the graph to show further detail.
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/KD_Perf_2.png)
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/KD_Perf_3.png)
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/KD_Perf_4.png)
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/KD_Perf_5.png)
+
+We also want to show the cost (in terms of percentage of compute) of the KD Tree construction as it relates to traversal.
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/KD_CPU_Perc.png)
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/KD_GPU_Perc.png)
+
+As you can see, the CPU construction is much less of a percentage of total compute.  That's because the GPU has to incur the overhead of the additional port to the GPU.  A GPU construction algorithm would rectify this.
+
+Overall we're pretty happy with our results.  We ended up spending a lot of time doing performance analysis and visualizations, which we had not done extensively before.

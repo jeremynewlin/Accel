@@ -454,8 +454,8 @@ int runKD()
 			clock_t t = clock();
 			//glm::vec3 pixel_color = bruteForceMeshTraversal( m, ray );
 			//glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
-			//glm::vec3 pixel_color = kdTreeMeshStacklessTraversal( kd_tree, ray );
-			glm::vec3 pixel_color = kdTreeGPUMeshStacklessTraversal( kd_tree_gpu, tri_index_array, ray );
+			glm::vec3 pixel_color = kdTreeMeshStacklessTraversal( kd_tree, ray );
+			//glm::vec3 pixel_color = kdTreeGPUMeshStacklessTraversal( kd_tree_gpu, tri_index_array, ray );
 			t = clock() - t;
 			totalTime += (float)t/(float)CLOCKS_PER_SEC;
 
@@ -758,7 +758,7 @@ int runKDOnGPU()
 	std::cout << "Reading in mesh..." << std::endl; // DEBUG.
 
 	// Initialize kd-tree.
-	mesh *m = new mesh( "meshes\\bunny.obj" );
+	mesh *m = new mesh( "meshes\\bunny_30k.obj" );
 
 	std::cout << "Constructing CPU kd-tree..." << std::endl; // DEBUG.
 
@@ -771,7 +771,7 @@ int runKDOnGPU()
 
 	// Camera settings.
 	float fovy = 45.0f;
-	glm::vec2 reso( 256, 256 );
+	glm::vec2 reso( 750, 750 );
 	glm::vec3 eyep( 0.5f, 0.5f, 10.0f );
 	glm::vec3 vdir( 0.0f, 0.0f, -1.0f );
 	glm::vec3 uvec( 0.0f, 1.0f, 0.0f );
@@ -780,6 +780,19 @@ int runKDOnGPU()
 	std::cout << "Performing GPU ray cast..." << std::endl; // DEBUG.
 
 	// Call CUDA kernel to compute pixel values.
+	float avgTime = 0;
+	int numSamples = 1500;
+	for (int i=0; i<numSamples; i+=1){
+		clock_t t = clock();
+		glm::vec3 *ray_cast_image = cudaRayCastObj( camera, m, kd_tree_gpu, false );
+		t = clock() - t;
+		avgTime += (float)t/(float)CLOCKS_PER_SEC;
+		delete[] ray_cast_image;
+	}
+
+	avgTime /= numSamples;
+	cout<<avgTime<<endl;
+
 	glm::vec3 *ray_cast_image = cudaRayCastObj( camera, m, kd_tree_gpu, true );
 
 	// Initialize output bmp image.
@@ -943,6 +956,7 @@ int main(){
 
 	//return runGrid();
 	//return runKD2();
-	return runKD();
-	//runKDOnGPU();
+	//return runKD();
+	runKDOnGPU();
+	int x = 0;
 }

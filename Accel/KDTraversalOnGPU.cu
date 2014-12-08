@@ -4,7 +4,7 @@
 
 glm::vec3* cudaRayCastObj( Camera *camera, mesh *obj_mesh, KDTreeGPU *kd_tree, bool use_brute_force_approach )
 {
-	int camera_raycast_tile_size = 8;
+	int camera_raycast_tile_size = 16;
 
 	dim3 threads_per_block( camera_raycast_tile_size, camera_raycast_tile_size );
 	dim3 full_blocks_per_grid( ( int )ceil( ( float )camera->getResolution().x / ( float )camera_raycast_tile_size ),

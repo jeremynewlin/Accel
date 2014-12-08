@@ -10,8 +10,7 @@
 KDTreeGPU::KDTreeGPU( KDTreeCPU *kd_tree_cpu )
 {
 	num_nodes = kd_tree_cpu->getNumNodes();
-	cpu_tree_root = kd_tree_cpu->getRootNode();
-	root_index = cpu_tree_root->id;
+	root_index = kd_tree_cpu->getRootNode()->id;
 
 	num_verts = kd_tree_cpu->getMeshNumVerts();
 	num_tris = kd_tree_cpu->getMeshNumTris();
@@ -28,13 +27,12 @@ KDTreeGPU::KDTreeGPU( KDTreeCPU *kd_tree_cpu )
 		tris[i] = tmp_tris[i];
 	}
 
-
 	// Allocate memory for all nodes in GPU kd-tree.
 	tree_nodes = new KDTreeNodeGPU[num_nodes];
 
 	// Populate tree_nodes and tri_index_list.
 	tri_index_list.clear();
-	buildTree( cpu_tree_root );
+	buildTree( kd_tree_cpu->getRootNode() );
 }
 
 KDTreeGPU::~KDTreeGPU()
@@ -48,6 +46,41 @@ KDTreeGPU::~KDTreeGPU()
 	}
 
 	delete[] tree_nodes;
+}
+
+
+////////////////////////////////////////////////////
+// Getters.
+////////////////////////////////////////////////////
+
+int KDTreeGPU::getRootIndex() const
+{
+	return root_index;
+}
+
+KDTreeNodeGPU* KDTreeGPU::getTreeNodes() const
+{
+	return tree_nodes;
+}
+
+glm::vec3* KDTreeGPU::getMeshVerts() const
+{
+	return verts;
+}
+
+glm::vec3* KDTreeGPU::getMeshTris() const
+{
+	return tris;
+}
+
+std::vector<int> KDTreeGPU::getTriIndexList() const
+{
+	return tri_index_list;
+}
+
+int KDTreeGPU::getNumNodes() const
+{
+	return num_nodes;
 }
 
 
@@ -124,11 +157,10 @@ void KDTreeGPU::printGPUNodeDataWithCorrespondingCPUNodeData( KDTreeNode *curr_n
 ////////////////////////////////////////////////////
 // GPU stackless kd-tree traversal method to be called from CUDA kernel.
 ////////////////////////////////////////////////////
-__device__
-bool intersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir,
-				int root_index, KDTreeNodeGPU *tree_nodes, int *kd_tri_index_list,
-				glm::vec3 *tris, glm::vec3 *verts,
-				float &t, glm::vec3 &hit_point, glm::vec3 &normal )
+bool cpuStacklessGPUIntersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir,
+							   int root_index, KDTreeNodeGPU *tree_nodes, int *kd_tri_index_list,
+							   glm::vec3 *tris, glm::vec3 *verts,
+							   float &t, glm::vec3 &hit_point, glm::vec3 &normal )
 {
     KDTreeNodeGPU curr_node = tree_nodes[root_index];
 
@@ -192,7 +224,7 @@ bool intersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir,
 		int new_node_index = curr_node.getNeighboringNodeIndex( p_exit );
 
 		// Break if neighboring node not found, meaning we've exited the kd-tree.
-		if ( new_node_index = -1 ) {
+		if ( new_node_index == -1 ) {
 			break;
 		}
 

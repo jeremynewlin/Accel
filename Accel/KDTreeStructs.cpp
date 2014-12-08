@@ -158,13 +158,13 @@ KDTreeNodeGPU::KDTreeNodeGPU()
 	right_child_index = -1;
 	first_tri_index = -1;
 	num_tris = 0;
+	is_leaf_node = false;
 
 	for ( int i = 0; i < 6; ++i ) {
 		neighbor_node_indices[i] = -1;
 	}
 }
 
-__device__
 bool KDTreeNodeGPU::isPointToLeftOfSplittingPlane( const glm::vec3 &p ) const
 {
 	if ( split_plane_axis == X_AXIS ) {
@@ -183,7 +183,6 @@ bool KDTreeNodeGPU::isPointToLeftOfSplittingPlane( const glm::vec3 &p ) const
 	}
 }
 
-__device__
 int KDTreeNodeGPU::getNeighboringNodeIndex( glm::vec3 p )
 {
 	// Check left face.

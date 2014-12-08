@@ -2,7 +2,7 @@
 #include <limits>
 
 
-glm::vec3* cudaRayCastObj( Camera *camera, mesh *obj_mesh, KDTreeGPU *kd_tree )
+glm::vec3* cudaRayCastObj( Camera *camera, mesh *obj_mesh, KDTreeGPU *kd_tree, bool use_brute_force_approach )
 {
 	int camera_raycast_tile_size = 8;
 
@@ -45,12 +45,18 @@ glm::vec3* cudaRayCastObj( Camera *camera, mesh *obj_mesh, KDTreeGPU *kd_tree )
 	cudaMalloc( ( void** )&cuda_kd_tree_tri_indices, size_kd_tree_nodes );
 	cudaMemcpy( cuda_kd_tree_tri_indices, tri_index_array, size_kd_tree_tri_indices, cudaMemcpyHostToDevice );
 
-
 	// Call ray cast kernel.
-	performGPURaycast<<< full_blocks_per_grid, threads_per_block >>>( cuda_image,
-																	  camera->getResolution(), camera->getPosition(), camera->getM() , camera->getH() , camera->getV(),
-																	  cuda_mesh_tris, cuda_mesh_verts,
-																	  kd_tree->getRootIndex(), cuda_kd_tree_nodes, cuda_kd_tree_tri_indices );
+	if ( use_brute_force_approach ) {
+		performBruteForceGPURaycast<<< full_blocks_per_grid, threads_per_block >>>( cuda_image,
+																					camera->getResolution(), camera->getPosition(), camera->getM() , camera->getH() , camera->getV(),
+																					obj_mesh->bb, obj_mesh->numTris, cuda_mesh_tris, cuda_mesh_verts );
+	}
+	else {
+		performGPURaycast<<< full_blocks_per_grid, threads_per_block >>>( cuda_image,
+																		  camera->getResolution(), camera->getPosition(), camera->getM() , camera->getH() , camera->getV(),
+																		  cuda_mesh_tris, cuda_mesh_verts,
+																		  kd_tree->getRootIndex(), cuda_kd_tree_nodes, cuda_kd_tree_tri_indices );
+	}
 
 	// Copy image from device to host.
 	glm::vec3 *rendered_image = new glm::vec3[( int )camera->getResolution().x * ( int )camera->getResolution().y];
@@ -68,7 +74,6 @@ glm::vec3* cudaRayCastObj( Camera *camera, mesh *obj_mesh, KDTreeGPU *kd_tree )
 }
 
 
-// Compute rays from camera through pixels and store in ray_pool.
 __global__
 void performGPURaycast( glm::vec3 *image_buffer,
 						glm::vec2 cam_reso, glm::vec3 cam_pos, glm::vec3 cam_m, glm::vec3 cam_h, glm::vec3 cam_v,
@@ -115,6 +120,69 @@ void performGPURaycast( glm::vec3 *image_buffer,
 	image_buffer[index] = pixel_color;
 	return;
 }
+
+
+__global__
+void performBruteForceGPURaycast( glm::vec3 *image_buffer,
+								  glm::vec2 cam_reso, glm::vec3 cam_pos, glm::vec3 cam_m, glm::vec3 cam_h, glm::vec3 cam_v,
+								  boundingBox bbox, int num_tris, glm::vec3 *mesh_tris, glm::vec3 *mesh_verts )
+{
+	int x = ( blockIdx.x * blockDim.x ) + threadIdx.x;
+	int y = ( blockIdx.y * blockDim.y ) + threadIdx.y;
+	int index = ( y * ( int )cam_reso.x ) + x;
+
+	if ( index > ( cam_reso.x * cam_reso.y ) ) {
+		return;
+	}
+
+	float sx = ( float )x / ( cam_reso.x - 1.0f );
+	float sy = 1.0f - ( ( float )y / ( cam_reso.y - 1.0f ) );
+	glm::vec3 image_point = cam_m + ( ( 2.0f * sx - 1.0f ) * cam_h ) + ( ( 2.0f * sy - 1.0f ) * cam_v );
+	glm::vec3 dir = image_point - cam_pos;
+
+	Ray r;
+	r.origin = cam_pos;
+	r.dir = glm::normalize( dir );
+
+	glm::vec3 pixel_color( 0.0f, 0.0f, 0.0f );
+
+	// Perform ray/AABB intersection test.
+	float t_near, t_far;
+	bool intersects_aabb = gpuAABBIntersect( bbox, r.origin, r.dir, t_near, t_far );
+
+	if ( intersects_aabb ) {
+		float t = 999999999;
+
+		for ( int i = 0; i < num_tris; ++i ) {
+			glm::vec3 tri = mesh_tris[i];
+			glm::vec3 v0 = mesh_verts[( int )tri[0]];
+			glm::vec3 v1 = mesh_verts[( int )tri[1]];
+			glm::vec3 v2 = mesh_verts[( int )tri[2]];
+
+			// Perform ray/triangle intersection test.
+			float tmp_t = 999999999;
+			glm::vec3 tmp_normal( 0.0f, 0.0f, 0.0f );
+			bool intersects_tri = gpuTriIntersect( r.origin, r.dir, v0, v1, v2, tmp_t, tmp_normal );
+
+			if ( intersects_tri ) {
+				if ( tmp_t < t ) {
+					t = tmp_t;
+					pixel_color.x = ( tmp_normal.x < 0.0f ) ? ( tmp_normal.x * -1.0f ) : tmp_normal.x;
+					pixel_color.y = ( tmp_normal.y < 0.0f ) ? ( tmp_normal.y * -1.0f ) : tmp_normal.y;
+					pixel_color.z = ( tmp_normal.z < 0.0f ) ? ( tmp_normal.z * -1.0f ) : tmp_normal.z;
+
+				}
+			}
+		}
+	}
+
+	image_buffer[index] = pixel_color;
+	return;
+}
+
+
+
+
 
 
 ////////////////////////////////////////////////////

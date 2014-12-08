@@ -103,6 +103,7 @@ for (int i=0; i<grid.numberOfPoints(); i+=1){
 		//Do something with this neighbor! 
 	}
 }
+```
 
 KD Tree
 -----

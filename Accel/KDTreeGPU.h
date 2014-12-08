@@ -3,6 +3,7 @@
 
 #include "KDTreeStructs.h"
 #include "KDTreeCPU.h"
+#include <cuda_runtime.h>
 
 
 class KDTreeGPU
@@ -23,7 +24,18 @@ private:
 
 	KDTreeNode *cpu_tree_root;
 
+	// Input mesh variables.
+	int num_verts, num_tris;
+	glm::vec3 *verts, *tris;
+
 	void buildTree( KDTreeNode *curr_node );
 };
+
+
+// kd-tree traversal method on the GPU.
+__device__ bool intersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir,
+						   int root_index, KDTreeNodeGPU *tree_nodes, int *kd_tri_index_list,
+						   glm::vec3 *tris, glm::vec3 *verts,
+						   float &t, glm::vec3 &hit_point, glm::vec3 &normal );
 
 #endif

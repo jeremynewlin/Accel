@@ -11,7 +11,7 @@
 // Constants.
 ////////////////////////////////////////////////////
 
-const int NUM_TRIS_PER_NODE = 2000;
+const int NUM_TRIS_PER_NODE = 20;
 const bool USE_TIGHT_FITTING_BOUNDING_BOXES = false;
 const float INFINITY = std::numeric_limits<float>::max();
 
@@ -34,6 +34,12 @@ public:
 	int getNumLevels( void ) const;
 	int getNumLeaves( void ) const;
 	int getNumNodes( void ) const;
+
+	// Input mesh getters.
+	int getMeshNumVerts( void ) const;
+	int getMeshNumTris( void ) const;
+	glm::vec3* getMeshVerts( void ) const;
+	glm::vec3* getMeshTris( void ) const;
 
 	// Debug methods.
 	void printNumTrianglesInEachNode( KDTreeNode *curr_node, int curr_depth=1 );

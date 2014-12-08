@@ -20,6 +20,7 @@ Intersections::~Intersections()
 // Implementation inspired by zacharmarz.
 // https://gamedev.stackexchange.com/questions/18436/most-efficient-aabb-vs-ray-collision-algorithms
 ////////////////////////////////////////////////////
+__host__ __device__
 bool Intersections::aabbIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 ray_dir, float &t_near, float &t_far )
 {
 	glm::vec3 dirfrac( 1.0f / ray_dir.x, 1.0f / ray_dir.y, 1.0f / ray_dir.z );
@@ -55,6 +56,7 @@ bool Intersections::aabbIntersect( boundingBox bbox, glm::vec3 ray_o, glm::vec3 
 // Implementation inspired by Tomas Moller: http://www.graphics.cornell.edu/pubs/1997/MT97.pdf
 // Additional algorithm details: http://www.lighthouse3d.com/tutorials/maths/ray-triangle-intersection/
 ////////////////////////////////////////////////////
+__host__ __device__
 bool Intersections::triIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, float &t, glm::vec3 &normal )
 {
 	glm::vec3 e1, e2, h, s, q;
@@ -101,6 +103,7 @@ bool Intersections::triIntersect( glm::vec3 ray_o, glm::vec3 ray_dir, glm::vec3 
 ////////////////////////////////////////////////////
 // computeTriNormal().
 ////////////////////////////////////////////////////
+__host__ __device__
 glm::vec3 Intersections::computeTriNormal( const glm::vec3 &p1, const glm::vec3 &p2, const glm::vec3 &p3 )
 {
 	glm::vec3 u = p2 - p1;

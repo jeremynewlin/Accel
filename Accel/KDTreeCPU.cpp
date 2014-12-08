@@ -15,9 +15,17 @@ KDTreeCPU::KDTreeCPU( int num_tris, glm::vec3 *tris, int num_verts, glm::vec3 *v
 	num_leaves = 0;
 	num_nodes = 0;
 	this->num_verts = num_verts;
-	this->verts = verts;
 	this->num_tris = num_tris;
-	this->tris = tris;
+
+	this->verts = new glm::vec3[num_verts];
+	for ( int i = 0; i < num_verts; ++i ) {
+		this->verts[i] = verts[i];
+	}
+
+	this->tris = new glm::vec3[num_tris];
+	for ( int i = 0; i < num_tris; ++i ) {
+		this->tris[i] = tris[i];
+	}
 
 	// Create list of triangle indices for first level of kd-tree.
 	int *tri_indices = new int[num_tris];
@@ -117,6 +125,26 @@ float KDTreeCPU::getMaxTriValue( int tri_index, SplitAxis axis )
 	else {
 		return ( v0.z > v1.z && v0.z > v2.z ) ? v0.z : ( v1.z > v2.z ? v1.z : v2.z );
 	}
+}
+
+int KDTreeCPU::getMeshNumVerts( void ) const
+{
+	return num_verts;
+}
+
+int KDTreeCPU::getMeshNumTris( void ) const
+{
+	return num_tris;
+}
+
+glm::vec3* KDTreeCPU::getMeshVerts( void ) const
+{
+	return verts;
+}
+
+glm::vec3* KDTreeCPU::getMeshTris( void ) const
+{
+	return tris;
 }
 
 

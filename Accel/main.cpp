@@ -445,12 +445,12 @@ int runKD()
 		for ( int x = 0; x < reso.x; ++x ) {
 			Ray ray = camera->computeRayThroughPixel( x, y );
 
-			glm::vec3 pixel_color( 0.0f, 0.0f, 0.0f );
+			//glm::vec3 pixel_color( 0.0f, 0.0f, 0.0f );
 			//glm::vec3 pixel_color = bruteForceMeshTraversal( m, ray );
 			//glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
-			//glm::vec3 pixel_color = kdTreeMeshStacklessTraversal( kd_tree, ray );
+			glm::vec3 pixel_color = kdTreeMeshStacklessTraversal( kd_tree, ray );
 
-			//// Write pixel.
+			// Write pixel.
 			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
 			output_img( x, y )->Green = ( ebmpBYTE )( pixel_color.y * 255.0f );
 			output_img( x, y )->Blue = ( ebmpBYTE )( pixel_color.z * 255.0f );
@@ -465,7 +465,7 @@ int runKD()
 	}
 
 	// Write output image at path specified above with name specified in scene config file.
-	//output_img.WriteToFile( OUTPUT_IMG_PATH.c_str() );
+	output_img.WriteToFile( OUTPUT_IMG_PATH.c_str() );
 
 	bool run = GL_TRUE;
 

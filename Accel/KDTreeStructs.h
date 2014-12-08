@@ -2,6 +2,7 @@
 #define KD_TREE_STRUCTS_H
 
 #include "boundingBox.h"
+#include <cuda_runtime.h>
 
 
 ////////////////////////////////////////////////////
@@ -90,6 +91,11 @@ public:
 
 	SplitAxis split_plane_axis;
 	float split_plane_value;
+
+	bool is_leaf_node;
+
+	__device__ bool isPointToLeftOfSplittingPlane( const glm::vec3 &p ) const;
+	__device__ int getNeighboringNodeIndex( glm::vec3 p );
 
 	// Debug method.
 	void prettyPrint( void );

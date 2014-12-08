@@ -45,7 +45,6 @@ bool KDTreeNode::isPointToLeftOfSplittingPlane( const glm::vec3 &p ) const
 	// Something went wrong because split_plane_axis is not set to one of the three allowed values.
 	else {
 		std::cout << "ERROR: split_plane_axis not set to valid value." << std::endl;
-		std::cin.ignore();
 		return false;
 	}
 }
@@ -79,7 +78,6 @@ KDTreeNode* KDTreeNode::getNeighboringNode( glm::vec3 p )
 	// p should be a point on one of the faces of this node's bounding box, but in this case, it isn't.
 	else {
 		std::cout << "ERROR: Node neighbor could not be returned." << std::endl;
-		//std::cin.ignore();
 		return NULL;
 	}
 }
@@ -166,6 +164,59 @@ KDTreeNodeGPU::KDTreeNodeGPU()
 	}
 }
 
+__device__
+bool KDTreeNodeGPU::isPointToLeftOfSplittingPlane( const glm::vec3 &p ) const
+{
+	if ( split_plane_axis == X_AXIS ) {
+		return ( p.x < split_plane_value );
+	}
+	else if ( split_plane_axis == Y_AXIS ) {
+		return ( p.y < split_plane_value );
+	}
+	else if ( split_plane_axis == Z_AXIS ) {
+		return ( p.z < split_plane_value );
+	}
+	// Something went wrong because split_plane_axis is not set to one of the three allowed values.
+	else {
+		std::cout << "ERROR: split_plane_axis not set to valid value." << std::endl;
+		return false;
+	}
+}
+
+__device__
+int KDTreeNodeGPU::getNeighboringNodeIndex( glm::vec3 p )
+{
+	// Check left face.
+	if ( fabs( p.x - bbox.min.x ) < KD_TREE_EPSILON ) {
+		return neighbor_node_indices[LEFT];     
+	}
+	// Check front face.
+	else if ( fabs( p.z - bbox.max.z ) < KD_TREE_EPSILON ) {
+		return neighbor_node_indices[FRONT];
+	}
+	// Check right face.
+	else if ( fabs( p.x - bbox.max.x ) < KD_TREE_EPSILON ) {
+		return neighbor_node_indices[RIGHT];
+	}
+	// Check back face.
+	else if ( fabs( p.z - bbox.min.z ) < KD_TREE_EPSILON ) {
+		return neighbor_node_indices[BACK];
+	}
+	// Check top face.
+	else if ( fabs( p.y - bbox.max.y ) < KD_TREE_EPSILON ) {
+		return neighbor_node_indices[TOP];
+	}
+	// Check bottom face.
+	else if ( fabs( p.y - bbox.min.y ) < KD_TREE_EPSILON ) {
+		return neighbor_node_indices[BOTTOM];
+	}
+	// p should be a point on one of the faces of this node's bounding box, but in this case, it isn't.
+	else {
+		std::cout << "ERROR: Node neighbor could not be returned." << std::endl;
+		return -1;
+	}
+}
+
 void KDTreeNodeGPU::prettyPrint()
 {
 	std::cout << "bounding box min: ( " << bbox.min.x << ", " << bbox.min.y << ", " << bbox.min.z << " )" << std::endl;
@@ -188,6 +239,14 @@ void KDTreeNodeGPU::prettyPrint()
 	}
 
 	std::cout << "split plane value: " << split_plane_value << std::endl;
+
+	// Print whether or not node is a leaf node.
+	if ( is_leaf_node ) {
+		std::cout << "is leaf node: YES" << std::endl;
+	}
+	else {
+		std::cout << "is leaf node: NO" << std::endl;
+	}
 
 	// Print children indices.
 	std::cout << "left child index: " << left_child_index << std::endl;

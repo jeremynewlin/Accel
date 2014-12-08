@@ -117,6 +117,20 @@ Max number of intersections - 467.  KD Tree with max 20 triangles / node.  Very 
 
 So we're only intersecting when we need to, which is a great thing.
 
+###Stackless kd-tree traversal on the GPU
+
+For this project, we implemented a stackless kd-tree on the GPU as discussed in "Stackless KD-Tree Traversal for High Performance GPU Ray Tracing" by Popov, Günther, Seidel, and Slusallek (2007). This method begins with a standard kd-tree, where each node maintains pointers to its children. To traverse such a tree requires recursion. Unfortunately, recursion is difficult to perform on the GPU. Instead, using methods introduced in the aforementioned paper, we convert our traditional kd-tree into a stackless kd-tree by adding something called a "rope structure".
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/stackless_kd_tree_ropes_diagram.PNG)
+
+In the stackless kd-tree structure, every leaf node maintains a list of it's neighboring nodes through ropes. A rope is basically a pointer to another node in the tree. Each leaf node has six ropes, one for each face of its bounding boxes. These ropes are added as a post-process after initial kd-tree construction occurs.
+
+[TODO: Some info about the traversal process.]
+
+[You can read more about this method here.](https://graphics.cg.uni-saarland.de/fileadmin/cguds/papers/2007/popov_07_GPURT/Popov_et_al._-_Stackless_KD-Tree_Traversal_for_High_Performance_GPU_Ray_Tracing.pdf)
+
+###Kd-tree performance analysis
+
 Now we're going to show some other performance statistics for the KD Tree.
 
 ![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/KD_Perf_1.png)
@@ -140,3 +154,12 @@ We also want to show the cost (in terms of percentage of compute) of the KD Tree
 As you can see, the CPU construction is much less of a percentage of total compute.  That's because the GPU has to incur the overhead of the additional port to the GPU.  A GPU construction algorithm would rectify this.
 
 Overall we're pretty happy with our results.  We ended up spending a lot of time doing performance analysis and visualizations, which we had not done extensively before.
+
+### KD-tree API
+
+The following are code samples that can be used to perform various kd-tree operations on both the CPU and GPU after including the code in this project into your own projects.
+
+```c++
+#include "KDTreeCPU.h"
+#include "KDTreeGPU.h"
+```

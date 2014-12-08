@@ -40,8 +40,8 @@ KDTreeCPU::KDTreeCPU( int num_tris, glm::vec3 *tris, int num_verts, glm::vec3 *v
 	root = constructTreeMedianSpaceSplit( num_tris, tri_indices, bbox, 1 );
 
     // build rope structure
-    KDTreeNode* ropes[6] = { NULL };
-    buildRopeStructure( root, ropes, true );
+    //KDTreeNode* ropes[6] = { NULL };
+    //buildRopeStructure( root, ropes, true );
 }
 
 KDTreeCPU::~KDTreeCPU()
@@ -55,6 +55,13 @@ KDTreeCPU::~KDTreeCPU()
 	}
 
 	delete root;
+}
+
+
+void KDTreeCPU::buildRopeStructure()
+{
+    KDTreeNode* ropes[6] = { NULL };
+    buildRopeStructure( root, ropes, true );
 }
 
 

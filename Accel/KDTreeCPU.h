@@ -29,6 +29,8 @@ public:
 	bool intersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t, glm::vec3 &hit_point, glm::vec3 &normal ) const;
 	bool singleRayStacklessIntersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir, float &t, glm::vec3 &hit_point, glm::vec3 &normal ) const;
 
+	void buildRopeStructure( void );
+
 	// kd-tree getters.
 	KDTreeNode* getRootNode( void ) const;
 	int getNumLevels( void ) const;

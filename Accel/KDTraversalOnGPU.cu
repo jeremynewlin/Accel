@@ -181,10 +181,6 @@ void performBruteForceGPURaycast( glm::vec3 *image_buffer,
 }
 
 
-
-
-
-
 ////////////////////////////////////////////////////
 // GPU stackless kd-tree traversal method to be called from CUDA kernel.
 ////////////////////////////////////////////////////

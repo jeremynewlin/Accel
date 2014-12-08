@@ -60,3 +60,23 @@ glm::vec2 Camera::getResolution() const
 {
 	return reso;
 }
+
+glm::vec3 Camera::getPosition() const
+{
+	return eyep;
+}
+
+glm::vec3 Camera::getM() const
+{
+	return m;
+}
+
+glm::vec3 Camera::getH() const
+{
+	return h;
+}
+
+glm::vec3 Camera::getV() const
+{
+	return v;
+}

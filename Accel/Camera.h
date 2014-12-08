@@ -14,6 +14,10 @@ public:
 	Ray computeRayThroughPixel( const int x, const int y ) const;
 
 	glm::vec2 getResolution( void ) const;
+	glm::vec3 getPosition( void ) const;
+	glm::vec3 getM( void ) const;
+	glm::vec3 getH( void ) const;
+	glm::vec3 getV( void ) const;
 
 private:
 	float fovy, fovx;

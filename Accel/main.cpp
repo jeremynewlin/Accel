@@ -14,6 +14,7 @@
 #include "Intersections.h"
 #include <limits>
 #include "KDTreeGPU.h"
+#include "KDTraversalOnGPU.h"
 
 using namespace std;
 
@@ -747,9 +748,16 @@ int runKD2()
 
 int runKDOnGPU()
 {
+	std::cout << "Reading in mesh..." << std::endl; // DEBUG.
+
 	// Initialize kd-tree.
 	mesh *m = new mesh( "meshes\\bunny.obj" );
+
+	std::cout << "Constructing CPU kd-tree..." << std::endl; // DEBUG.
+
 	KDTreeCPU *kd_tree = new KDTreeCPU( m->numTris, m->tris, m->numVerts, m->verts );
+
+	std::cout << "Constructing GPU kd-tree..." << std::endl; // DEBUG.
 
 	// Create GPU kd-tree structure from CPU kd-tree structure.
 	KDTreeGPU *kd_tree_gpu = new KDTreeGPU( kd_tree );
@@ -762,19 +770,23 @@ int runKDOnGPU()
 	glm::vec3 uvec( 0.0f, 1.0f, 0.0f );
 	Camera *camera = new Camera( fovy, reso, eyep, vdir, uvec );
 
-	// TODO: Call CUDA kernel to compute pixel values.
+	std::cout << "Performing GPU ray cast..." << std::endl; // DEBUG.
+
+	// Call CUDA kernel to compute pixel values.
+	glm::vec3 *ray_cast_image = cudaRayCastObj( camera, m, kd_tree_gpu );
 
 	// Initialize output bmp image.
 	BMP output_img;
 	output_img.SetSize( ( int )reso.x, ( int )reso.y );
 	output_img.SetBitDepth( 24 );
 
+	std::cout << "Writing output..." << std::endl; // DEBUG.
+
 	// Iterate through all pixels.
 	for ( int y = 0; y < reso.y; ++y ) {
 		for ( int x = 0; x < reso.x; ++x ) {
-
-			// DEBUG.
-			glm::vec3 pixel_color( 0.0f, 0.0f, 0.0f );
+			int index = ( y * ( int )reso.x ) + x;
+			glm::vec3 pixel_color = ray_cast_image[index];;
 
 			// Write pixel.
 			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
@@ -786,6 +798,8 @@ int runKDOnGPU()
 	// Write output image at path specified above with name specified in scene config file.
 	const std::string OUTPUT_IMG_PATH = "ray_casting_output\\new.bmp";
 	output_img.WriteToFile( OUTPUT_IMG_PATH.c_str() );
+
+	delete[] ray_cast_image;
 
 	return 0;
 }
@@ -922,6 +936,6 @@ int main(){
 
 	//return runGrid();
 	//return runKD2();
-	return runKD();
-	//runKDOnGPU();
+	//return runKD();
+	runKDOnGPU();
 }

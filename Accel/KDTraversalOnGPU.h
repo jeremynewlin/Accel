@@ -6,17 +6,23 @@
 #include "Camera.h"
 #include "mesh.h"
 #include "KDTreeGPU.h"
+#include "boundingBox.h"
 
 
 // Kernel wrapper function.
-glm::vec3* cudaRayCastObj( Camera *camera, mesh *obj_mesh, KDTreeGPU *kd_tree );
+glm::vec3* cudaRayCastObj( Camera *camera, mesh *obj_mesh, KDTreeGPU *kd_tree, bool use_brute_force_approach=false );
 
-// CUDA kernel.
+// CUDA kernels.
 __global__
 void performGPURaycast( glm::vec3 *image_buffer,
 						glm::vec2 cam_reso, glm::vec3 cam_pos, glm::vec3 cam_m, glm::vec3 cam_h, glm::vec3 cam_v,
 						glm::vec3 *mesh_tris, glm::vec3 *mesh_verts,
 						int kd_tree_root_index, KDTreeNodeGPU *kd_tree_nodes, int *kd_tree_tri_indices );
+
+__global__
+void performBruteForceGPURaycast( glm::vec3 *image_buffer,
+								  glm::vec2 cam_reso, glm::vec3 cam_pos, glm::vec3 cam_m, glm::vec3 cam_h, glm::vec3 cam_v,
+								  boundingBox bbox, int num_tris, glm::vec3 *mesh_tris, glm::vec3 *mesh_verts );
 
 // kd-tree traversal method on the GPU.
 __device__ bool gpuStacklessGPUIntersect( const glm::vec3 &ray_o, const glm::vec3 &ray_dir,

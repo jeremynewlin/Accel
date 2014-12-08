@@ -773,7 +773,7 @@ int runKDOnGPU()
 	std::cout << "Performing GPU ray cast..." << std::endl; // DEBUG.
 
 	// Call CUDA kernel to compute pixel values.
-	glm::vec3 *ray_cast_image = cudaRayCastObj( camera, m, kd_tree_gpu );
+	glm::vec3 *ray_cast_image = cudaRayCastObj( camera, m, kd_tree_gpu, true );
 
 	// Initialize output bmp image.
 	BMP output_img;

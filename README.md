@@ -78,6 +78,32 @@ We put it to use in Jeremy's (kind of crappy) fluid sim.  It definitely sped thi
 
 [![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/fluid.png)](http://youtu.be/csQRrpv8Y5Y)
 
+### Uniform Grid Code Example
+```
+// Here is a code snippet to exemplify how to use the uniform grid.
+#include "uniform_grid.h"
+#include "mesh.h"
+
+mesh m("\\path_to_file");
+float h = 0.1f; //radius
+glm::vec3 gridSize(1.0f/h, 1.0f/h, 1.0f/h);
+hash_grid grid = hash_grid(m.numVerts, m.verts, gridSize);
+
+int maxNumberOfNeighbors = 250;
+bool useGPU = true;
+bool useGrid= true;
+grid.findNeighbors(maxNumberOfNeighbors , h, useGrid, useGPU);
+
+for (int i=0; i<grid.numberOfPoints(); i+=1){
+	int index = grid.getIndex(i);
+	int numberOfNeighbors = grid.getNumberOfNeighbors(index);
+	for (int j=0; j<numberOfNeighbors; j+=){
+		// Get jth neighbor of particle i
+		int neighborIndex = grid.getNeighbor(index, j);
+		//Do something with this neighbor! 
+	}
+}
+
 KD Tree
 -----
 

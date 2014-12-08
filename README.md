@@ -76,6 +76,8 @@ Overall, we're happy with grid - hopefully it will be of some use!
 
 We put it to use in Jeremy's (kind of crappy) fluid sim.  It definitely sped things up!  With brute force search, the sim ran at just below 30 FPS, and with the grid, it ran at over 40 FPS.  So 1.3x increase in speed.  Not exactly revolutionary, but still pretty good.  See the video below.  (Unfortunately the only screen recording software we had access to was pretty bad, so you'll have to forgive the poor quality recording).
 
+[![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/fluid.png)](http://youtu.be/csQRrpv8Y5Y)
+
 KD Tree
 -----
 

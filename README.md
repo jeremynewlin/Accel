@@ -74,6 +74,10 @@ With higher particles counts, the extra memory becomes insignificant:
 
 Overall, we're happy with grid - hopefully it will be of some use!
 
+We put it to use in Jeremy's (kind of crappy) fluid sim.  It definitely sped things up!  With brute force search, the sim ran at just below 30 FPS, and with the grid, it ran at over 40 FPS.  So 1.3x increase in speed.  Not exactly revolutionary, but still pretty good.  See the video below.  (Unfortunately the only screen recording software we had access to was pretty bad, so you'll have to forgive the poor quality recording).
+
+[![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/fluid.png)](http://youtu.be/csQRrpv8Y5Y)
+
 KD Tree
 -----
 
@@ -111,10 +115,4 @@ Max number of intersections - 1666.  KD Tree with max 200 triangles / node.  If 
 
 Max number of intersections - 467.  KD Tree with max 20 triangles / node.  Very few intersection test computed.
 
-So we're only intersecting when we need to, which is a great thing.  However you also have to look at the cost of building this structure, in terms of compute and memory.
-
-![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/construction_v_traversal_graph.png)
-
-As you can see, the construction time dwarfs an individual traversal time.  However, factoring in the large number of traversals needed to generate an image, it becomes clear that in general, you want to create an tree that can be traversed quickly, even it may cost a bit more to construct.
-
-![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/total_traversal_graph.png)
+So we're only intersecting when we need to, which is a great thing.

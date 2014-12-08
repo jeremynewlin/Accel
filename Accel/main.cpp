@@ -425,7 +425,7 @@ int runKD()
 
 	// Camera settings.
 	float fovy = 45.0f;
-	glm::vec2 reso( 256, 256 );
+	glm::vec2 reso( 750, 750 );
 	glm::vec3 eyep( 0.5f, 0.5f, 10.0f );
 	glm::vec3 vdir( 0.0f, 0.0f, -1.0f );
 	glm::vec3 uvec( 0.0f, 1.0f, 0.0f );
@@ -446,16 +446,21 @@ int runKD()
 	int lines_since_last_output = 0;
 	int lines_between_outputs = 10;
 
+	float totalTime = 0;
+
 	// Iterate through all pixels.
 	for ( int y = 0; y < reso.y; ++y ) {
 		for ( int x = 0; x < reso.x; ++x ) {
 			Ray ray = camera->computeRayThroughPixel( x, y );
 
 			//glm::vec3 pixel_color( 0.0f, 0.0f, 0.0f );
+			clock_t t = clock();
 			//glm::vec3 pixel_color = bruteForceMeshTraversal( m, ray );
 			//glm::vec3 pixel_color = kdTreeMeshTraversal( kd_tree, ray );
 			//glm::vec3 pixel_color = kdTreeMeshStacklessTraversal( kd_tree, ray );
 			glm::vec3 pixel_color = kdTreeGPUMeshStacklessTraversal( kd_tree_gpu, tri_index_array, ray );
+			t = clock() - t;
+			totalTime += (float)t/(float)CLOCKS_PER_SEC;
 
 			// Write pixel.
 			output_img( x, y )->Red = ( ebmpBYTE )( pixel_color.x * 255.0f );
@@ -470,6 +475,8 @@ int runKD()
 			std::cout << "Rendered " << y + 1 << " lines." << std::endl;
 		}
 	}
+
+	cout<<totalTime<<endl;
 
 	// Write output image at path specified above with name specified in scene config file.
 	output_img.WriteToFile( OUTPUT_IMG_PATH.c_str() );

@@ -118,8 +118,6 @@ Similar to the uniform hash grid, this structure partitions the space into regio
 
 Now, the general case for intersecting this mesh using ray tracking is to simply loop over all of the triangles, finding the one that is the closes to the origin of the ray.  Pretty simple but has one glaring problem.  What about all of the pixels that have no chance of intersecting any triangle on the mesh?  That's the majority of the image!  We want to cull out those pixels and not even attempt ray tracking against the mesh.  The easiest way to do that is to first try intersecting the bounding box of the mesh.  If the ray doesn't hit that, there is no way that it could intersect a triangle on the mesh.
 
-image
-
 Now, you can think of a KD Tree as a set of bounding boxes of regions of the mesh.  Then we just arrange them in a fancy way that helps us accelerate this process.  The visualization below shows the number of ray-triangle intersections calculate at each pixel.  Green represents no intersections, while red indicates the max number of intersections.
 
 ![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/kd_intersections_brute.bmp)
@@ -132,7 +130,7 @@ Max number of intersections - 29808. Just a bounding box - every pixel that inte
 
 ![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/kd_intersections_2000.bmp)
 
-Max number of intersections - 7147.  KD Tree with max 200 triangles / node.  You can vaguely see the global shape of the bunny
+Max number of intersections - 7147.  KD Tree with max 2000 triangles / node.  You can vaguely see the global shape of the bunny
 
 ![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/kd_intersections_200.bmp)
 
@@ -152,7 +150,11 @@ For this project, we implemented a stackless kd-tree on the GPU as discussed in 
 
 In the stackless kd-tree structure, every leaf node maintains a list of it's neighboring nodes through ropes. A rope is basically a pointer to another node in the tree. Each leaf node has six ropes, one for each face of its bounding boxes. These ropes are added as a post-process after initial kd-tree construction occurs.
 
-[TODO: Some info about the traversal process.]
+During traversal, the first step is to set an entry and exit point for the ray into the kd-tree. Next, the tree is traversed from the root down in search of a "good" leaf node. This good leaf node is found by intelligently traversing child nodes by comparing the ray entry point into the current node's bounding box against the splitting plane value used to partition that space during kd-tree construction. Once a leaf node is reached, the triangles contained within that node are tested for intersection against the ray. If an intersection is found, then the exit point is updated to be the intersection point.
+
+Regardless of whether or not an intersection occurs, the entry point into the next node is found by finding the ray exit point for the current node. This next node is a neighboring node connected to the current node via ropes. Once the bounding box face where the ray exit point exists is found, the rope connected to that face can be followed to the next node to be tested for triangle intersections. This algorithm terminates when the exit point becomes less than the entry point.
+
+This traversal method is very efficient because thanks to ropes fewer nodes need to be traversed. Most importantly however, this traversal method can be implemented without recursion. The tree nodes can be packaged into an array where children and neighbors are represented by array indices. Such a stackless structure is ideal for a GPU computing environment.
 
 [You can read more about this method here.](https://graphics.cg.uni-saarland.de/fileadmin/cguds/papers/2007/popov_07_GPURT/Popov_et_al._-_Stackless_KD-Tree_Traversal_for_High_Performance_GPU_Ray_Tracing.pdf)
 
@@ -183,6 +185,8 @@ As you can see, the CPU construction is much less of a percentage of total compu
 Overall we're pretty happy with our results.  We ended up spending a lot of time doing performance analysis and visualizations, which we had not done extensively before.
 
 ### Video results
+
+![](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/stackless_gpu_traversal_test_scene.bmp)
 
 [Path tracing with stackless kd-tree traversal on the GPU](https://vimeo.com/113959261)
 

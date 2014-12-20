@@ -11,6 +11,9 @@ Before we get to our discussion of the uniform grid, let's talk about nearest ne
 ![Image](https://raw.githubusercontent.com/jeremynewlin/Accel/master/images/neighbor_example.png?raw=true)
 An example of a particle (green) and its neighbors (blue).
 
+TEST
+![Image](../blob/master/images/neighbor_example.png?raw=true)
+
 But, we ARE interested in performance, and the naive solution isn't going to cut it.  Enter the uniform grid, which is a type of spatial hashing data structure that allows for rapid nearest neighbor searches on the GPU (and CPU).
 
 The basic idea of the structure can be described easily with a picture.
